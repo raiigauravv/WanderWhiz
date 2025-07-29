@@ -1,0 +1,1547 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Your Optimized Itinerary - WanderWhiz</title>
+  <link rel="stylesheet" href="/static/css/styles.css">
+  <style>
+    .itinerary-header {
+      background: linear-gradient(135deg, #e67e22, #d35400);
+      color: white;
+      padding: 30px 20px;
+      text-align: center;
+      margin-bottom: 30px;
+      box-shadow: 0 8px 25px rgba(230, 126, 34, 0.3);
+    }
+    
+    .itinerary-header h1 {
+      font-size: 2.5rem;
+      font-weight: 700;
+      margin: 0 0 10px 0;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    }
+    
+    .itinerary-header p {
+      font-size: 1.2rem;
+      margin: 0;
+      opacity: 0.9;
+    }
+    
+    .itinerary-info {
+      max-width: 1000px;
+      margin: 0 auto 30px auto;
+      padding: 30px;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(15px);
+      border-radius: 20px;
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    .place-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+    
+    .place-card {
+      background: linear-gradient(135deg, #ffffff, #f8f9fa);
+      padding: 30px;
+      border-radius: 20px;
+      border: 1px solid rgba(230, 126, 34, 0.2);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .place-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 5px;
+      background: linear-gradient(90deg, #e67e22, #f39c12, #e74c3c);
+    }
+    
+    .place-card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 20px 45px rgba(0, 0, 0, 0.18);
+      border-color: rgba(230, 126, 34, 0.4);
+    }
+    
+    .place-card h3 {
+      color: #1a252f;
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin: 0 0 18px 0;
+      line-height: 1.3;
+    }
+    
+    .place-card .place-details {
+      color: #34495e;
+      line-height: 1.6;
+    }
+    
+    .place-card .place-details strong {
+      color: #2c3e50;
+      font-weight: 600;
+    }
+    
+    .place-number {
+      background: linear-gradient(135deg, #e67e22, #d35400);
+      color: white;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 1.1rem;
+      margin: 0 15px 15px 0;
+      box-shadow: 0 4px 12px rgba(230, 126, 34, 0.3);
+      transition: all 0.3s ease;
+      flex-shrink: 0;
+    }
+    
+    .place-number:hover {
+      transform: scale(1.1);
+      box-shadow: 0 6px 16px rgba(230, 126, 34, 0.4);
+    }
+    
+    .place-number-small {
+      background: linear-gradient(135deg, #3498db, #2980b9);
+      color: white;
+      width: 25px;
+      height: 25px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      margin-right: 10px;
+      font-size: 0.9rem;
+      box-shadow: 0 3px 10px rgba(52, 152, 219, 0.3);
+    }
+    
+    .place-rating {
+      float: right;
+      background: linear-gradient(135deg, #f1c40f 0%, #f39c12 50%, #e67e22 100%);
+      color: white;
+      padding: 8px 16px;
+      border-radius: 25px;
+      font-size: 1rem;
+      font-weight: 700;
+      box-shadow: 0 4px 15px rgba(241, 196, 15, 0.4);
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+    
+    .place-rating:hover {
+      transform: scale(1.1) rotate(2deg);
+      box-shadow: 0 6px 20px rgba(241, 196, 15, 0.6);
+    }
+    
+    .place-details {
+      color: #7f8c8d;
+      font-size: 0.95rem;
+      line-height: 1.5;
+      margin-top: 10px;
+    }
+    
+    .place-details strong {
+      color: #2c3e50;
+    }
+    
+    .time-based-plan {
+      margin-top: 40px;
+    }
+    
+    .time-based-plan h2 {
+      color: #2c3e50;
+      font-size: 2rem;
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 30px;
+      background: linear-gradient(135deg, #e67e22, #d35400);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    
+    .time-slots {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+      gap: 30px;
+      margin-top: 30px;
+    }
+    
+    .time-slot {
+      background: linear-gradient(135deg, #ffffff, #f8f9fa);
+      border-radius: 20px;
+      padding: 35px;
+      border: 2px solid rgba(230, 126, 34, 0.15);
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.12);
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .time-slot:hover {
+      transform: translateY(-10px);
+      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.18);
+      border-color: rgba(230, 126, 34, 0.3);
+    }
+    
+    .time-slot::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 6px;
+      background: linear-gradient(90deg, #e67e22, #f39c12);
+      border-radius: 20px 20px 0 0;
+    }
+    
+    /* Modern button styles */
+    .modern-btn:hover {
+      transform: translateY(-3px) scale(1.02);
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3) !important;
+    }
+    
+    .modern-btn:active {
+      transform: translateY(-1px) scale(1.01);
+    }
+    
+    .modern-btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+      transition: left 0.5s;
+    }
+    
+    .modern-btn:hover::before {
+      left: 100%;
+    }
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, #3498db, #2980b9);
+    }
+    
+    .time-slot.morning::before {
+      background: linear-gradient(90deg, #f39c12, #e67e22);
+    }
+    
+    .time-slot.afternoon::before {
+      background: linear-gradient(90deg, #e74c3c, #c0392b);
+    }
+    
+    .time-slot.evening::before {
+      background: linear-gradient(90deg, #9b59b6, #8e44ad);
+    }
+    
+    .time-header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 30px 25px;
+      border-radius: 25px 25px 0 0;
+      text-align: center;
+      margin-bottom: 0;
+      box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+      position: relative;
+      overflow: hidden;
+      border: none;
+    }
+    
+    .time-header::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+      transition: left 0.6s ease;
+    }
+    
+    .time-header:hover::before {
+      left: 100%;
+    }
+    
+    .time-header h4 {
+      margin: 0;
+      color: white;
+      font-size: 2rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 15px;
+      letter-spacing: 1px;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    }
+    
+    .time-header small {
+      display: block;
+      color: rgba(255,255,255,0.9);
+      font-weight: 600;
+      font-size: 1rem;
+      margin-top: 8px;
+      opacity: 0.95;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+    }
+    
+    .time-places {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    
+    .time-places li {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 18px;
+      padding: 18px 20px;
+      background: linear-gradient(135deg, #ffffff, #fafbfc);
+      border-radius: 12px;
+      border: 1px solid #e3e6ea;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+      transition: all 0.3s ease;
+    }
+    
+    .time-places li:hover {
+      background: linear-gradient(135deg, #f1f3f4, #ffffff);
+      border-color: #3498db;
+      transform: translateX(8px);
+      box-shadow: 0 6px 15px rgba(52, 152, 219, 0.15);
+    }
+    
+    .time-places li:last-child {
+      margin-bottom: 0;
+    }
+    
+    .place-info {
+      display: flex;
+      align-items: center;
+      flex: 1;
+      gap: 15px;
+    }
+    
+    .place-info strong {
+      color: #1a252f;
+      font-weight: 600;
+      font-size: 1.05rem;
+    }
+    
+    .place-rating {
+      color: #d68910;
+      font-weight: 700;
+      font-size: 1rem;
+      background: linear-gradient(135deg, #fff3cd, #fdeaa7);
+      padding: 8px 15px;
+      border-radius: 25px;
+      border: 2px solid #f7ca18;
+      box-shadow: 0 4px 8px rgba(247, 202, 24, 0.25);
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+      transition: all 0.3s ease;
+    }
+    
+    .place-rating:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(247, 202, 24, 0.35);
+    }
+    
+    /* Override for time-places rating specifically */
+    .time-places .place-rating {
+      float: right;
+      color: #d68910;
+      font-weight: 700;
+      font-size: 0.95rem;
+      background: linear-gradient(135deg, #fff3cd, #fdeaa7);
+      padding: 6px 12px;
+      border-radius: 20px;
+      border: 2px solid #f7ca18;
+      box-shadow: 0 2px 4px rgba(247, 202, 24, 0.2);
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    }
+    
+    /* Override for place-card rating specifically */
+    .place-card .place-rating {
+      float: right;
+      color: #f39c12;
+      font-size: 0.9rem;
+      background: none;
+      padding: 0;
+      border: none;
+      box-shadow: none;
+      text-shadow: none;
+    }
+    
+    .route-summary {
+      background: linear-gradient(135deg, #3498db, #2980b9);
+      color: white;
+      padding: 15px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    
+    .route-summary h4 {
+      margin: 0 0 10px 0;
+    }
+    
+    .route-stats {
+      display: flex;
+      justify-content: space-around;
+      flex-wrap: wrap;
+    }
+    
+    .route-stat {
+      text-align: center;
+      margin: 5px;
+    }
+    
+    .route-stat .value {
+      font-size: 1.2rem;
+      font-weight: bold;
+      display: block;
+    }
+    
+    .route-stat .label {
+      font-size: 0.9rem;
+      opacity: 0.9;
+    }
+    
+    .back-btn {
+      background: #3498db;
+      color: white;
+      text-decoration: none;
+      padding: 10px 20px;
+      border-radius: 5px;
+      display: inline-block;
+      margin: 20px;
+    }
+    
+    #map {
+      height: 70vh;
+      width: 100%;
+      border-radius: 10px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    .back-button {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      background: linear-gradient(135deg, #3498db, #2980b9);
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 50px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      box-shadow: 0 8px 25px rgba(52, 152, 219, 0.3);
+      transition: all 0.3s ease;
+      z-index: 1000;
+    }
+    
+    .back-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 35px rgba(52, 152, 219, 0.4);
+    }
+  </style>
+</head>
+<body>
+  <button onclick="window.history.back()" class="back-button">
+    ← Back
+  </button>
+  
+  <div class="itinerary-header">
+    <h1>🗓️ Your Optimized Itinerary</h1>
+    {% if saved_trip_name %}
+    <p>📂 Saved Trip: <strong>{{ saved_trip_name }}</strong></p>
+    {% endif %}
+    <p>Discover {{ places|length }} amazing places with the best route!</p>
+  </div>
+
+  <div class="itinerary-info">
+    {% if directions and directions.routes and directions.routes[0] %}
+    <div class="route-summary">
+      <h4>🛣️ {{ directions.routes[0].summary }}</h4>
+      <div class="route-stats">
+        {% if directions.routes[0].distance %}
+        <div class="route-stat">
+          <span class="value">{{ "%.1f"|format(directions.routes[0].distance / 1000) }} km</span>
+          <span class="label">Total Distance</span>
+        </div>
+        {% endif %}
+        {% if directions.routes[0].duration %}
+        <div class="route-stat">
+          <span class="value">{{ (directions.routes[0].duration / 60)|round }} min</span>
+          <span class="label">Travel Time</span>
+        </div>
+        {% endif %}
+        <div class="route-stat">
+          <span class="value">{{ places|length }}</span>
+          <span class="label">Places</span>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+    
+    <!-- 💰 Budget Estimation Section -->
+    <div class="budget-section" style="background: linear-gradient(135deg, #ffffff, #f8f9fa); border: 1px solid rgba(230, 126, 34, 0.2); border-radius: 20px; padding: 30px; margin: 30px auto; max-width: 800px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);">
+      <h3 style="color: #2c3e50; font-size: 1.8rem; font-weight: 700; text-align: center; margin-bottom: 25px; background: linear-gradient(135deg, #e67e22, #d35400); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+        💰 Estimated Budget
+      </h3>
+      <div id="budget-display" style="text-align: center;">
+        <div style="background: linear-gradient(135deg, #3498db, #2980b9); color: white; padding: 20px; border-radius: 15px; margin-bottom: 20px; box-shadow: 0 8px 25px rgba(52, 152, 219, 0.3);">
+          <div style="font-size: 2.5rem; font-weight: 700; margin-bottom: 10px;" id="total-budget">$0</div>
+          <div style="font-size: 1.1rem; opacity: 0.9;">Total Estimated Cost</div>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px;" id="budget-breakdown">
+          <!-- Budget breakdown will be populated by JavaScript -->
+        </div>
+      </div>
+    </div>
+    
+    <!-- 📤 Enhanced Export and Save Controls -->
+    <div class="action-controls" style="background: linear-gradient(135deg, #ffffff, #f8f9fa); border: 1px solid rgba(230, 126, 34, 0.2); border-radius: 20px; padding: 30px; margin: 30px auto; max-width: 800px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1); text-align: center;">
+      <h4 style="color: #2c3e50; font-size: 1.8rem; font-weight: 700; margin-bottom: 25px; background: linear-gradient(135deg, #e67e22, #d35400); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+        📤 Share & Save Your Trip
+      </h4>
+      
+      <div class="action-buttons" style="display: flex; flex-wrap: wrap; justify-content: center; gap: 20px;">
+        <button onclick="exportToPDF()" class="modern-btn" style="background: linear-gradient(135deg, #e74c3c, #c0392b); color: white; border: none; padding: 18px 30px; border-radius: 50px; cursor: pointer; display: flex; align-items: center; gap: 10px; font-size: 16px; font-weight: 600; box-shadow: 0 8px 25px rgba(231, 76, 60, 0.3); transition: all 0.3s ease; position: relative; overflow: hidden;">
+          📄 Download PDF
+        </button>
+        
+        <button onclick="generateMapsLink()" class="modern-btn" style="background: linear-gradient(135deg, #27ae60, #229954); color: white; border: none; padding: 18px 30px; border-radius: 50px; cursor: pointer; display: flex; align-items: center; gap: 10px; font-size: 16px; font-weight: 600; box-shadow: 0 8px 25px rgba(39, 174, 96, 0.3); transition: all 0.3s ease; position: relative; overflow: hidden;">
+          🗺️ Open in Google Maps
+        </button>
+        
+        <button onclick="saveItinerary()" class="modern-btn" style="background: linear-gradient(135deg, #3498db, #2980b9); color: white; border: none; padding: 18px 30px; border-radius: 50px; cursor: pointer; display: flex; align-items: center; gap: 10px; font-size: 16px; font-weight: 600; box-shadow: 0 8px 25px rgba(52, 152, 219, 0.3); transition: all 0.3s ease; position: relative; overflow: hidden;">
+          💾 Save Trip
+        </button>
+      </div>
+      
+      <div id="action-feedback" style="margin-top: 20px; font-weight: 600; font-size: 1.1rem;"></div>
+    </div>
+    
+    <h3 style="color: #2c3e50; font-size: 1.8rem; font-weight: 700; text-align: center; margin-bottom: 25px; background: linear-gradient(135deg, #e67e22, #d35400); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">📍 Your Selected Places (in optimized order)</h3>
+    <div class="place-list">
+      {% for place in places %}
+        <div class="place-card">
+          <div style="display: flex; align-items: flex-start; gap: 15px;">
+            <span class="place-number">{{ loop.index }}</span>
+            <div style="flex: 1;">
+              <h3>{{ place.name }}</h3>
+              <div class="place-details">
+                {% if place.rating %}
+                  <div style="margin-bottom: 8px;">
+                    <strong>Rating:</strong> {{ place.rating }} ⭐ 
+                    <span style="color: #f39c12;">({{ "★" * (place.rating|round|int) }}{{ "☆" * (5 - (place.rating|round|int)) }})</span>
+                  </div>
+                {% endif %}
+                
+                {% if place.formatted_address %}
+                  <div style="margin-bottom: 8px;">
+                    <strong>📍 Address:</strong> {{ place.formatted_address }}
+                  </div>
+                {% elif place.vicinity %}
+                  <div style="margin-bottom: 8px;">
+                    <strong>📍 Location:</strong> {{ place.vicinity }}
+                  </div>
+                {% endif %}
+                
+                {% if place.price_level %}
+                  <div style="margin-bottom: 8px;">
+                    <strong>💰 Price Level:</strong> 
+                    <span style="color: #e67e22; font-weight: bold;">{{ '$' * place.price_level }}</span>
+                    {% if place.price_level == 1 %}(Budget-Friendly)
+                    {% elif place.price_level == 2 %}(Moderate)
+                    {% elif place.price_level == 3 %}(Expensive)
+                    {% elif place.price_level >= 4 %}(Very Expensive)
+                    {% endif %}
+                  </div>
+                {% endif %}
+                
+                {% if place.types %}
+                  <div style="margin-bottom: 8px;">
+                    <strong>🏷️ Categories:</strong> 
+                    {% for type in place.types[:3] %}
+                      <span style="background: #ecf0f1; color: #2c3e50; padding: 2px 6px; border-radius: 4px; font-size: 0.8rem; margin-right: 4px;">{{ type.replace('_', ' ').title() }}</span>
+                    {% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+          
+          {% if place.rating %}
+            <div class="place-rating">{{ place.rating }} ⭐</div>
+          {% endif %}
+        </div>
+      {% endfor %}
+    </div>
+    
+    <p><strong>💡 Pro tip:</strong> The route has been optimized to minimize travel time between locations!</p>
+  </div>
+
+  {% if places|length >= 3 %}
+  <div class="itinerary-info time-based-plan">
+    <h3 style="color: #1a252f; font-size: 1.8rem; font-weight: 700; text-align: center; margin-bottom: 25px; background: linear-gradient(135deg, #e67e22, #d35400); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">🕐 Your Full-Day Plan</h3>
+    <p style="color: #34495e; margin-bottom: 25px; text-align: center; font-size: 1.1rem; font-weight: 500;">Perfect timing for a complete day of exploration (2-3 hours per location)</p>
+    
+    <div class="time-slots">
+      <div class="time-slot morning">
+        <div class="time-header">
+          <h4>🌅 Morning <small>(9:00 AM – 12:00 PM)</small></h4>
+        </div>
+        <ul class="time-places">
+          {% for place in places[:(places|length // 3)] %}
+            <li>
+              <div class="place-info">
+                <span class="place-number-small">{{ loop.index }}</span>
+                <strong>{{ place.name }}</strong>
+              </div>
+              <span class="place-rating">{{ place.rating or 'N/A' }} ⭐</span>
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+
+      <div class="time-slot afternoon">
+        <div class="time-header">
+          <h4>☀️ Afternoon <small>(1:00 PM – 4:00 PM)</small></h4>
+        </div>
+        <ul class="time-places">
+          {% for place in places[(places|length // 3):(2 * places|length // 3)] %}
+            <li>
+              <div class="place-info">
+                <span class="place-number-small">{{ loop.index + (places|length // 3) }}</span>
+                <strong>{{ place.name }}</strong>
+              </div>
+              <span class="place-rating">{{ place.rating or 'N/A' }} ⭐</span>
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+
+      <div class="time-slot evening">
+        <div class="time-header">
+          <h4>🌙 Evening <small>(5:00 PM – 8:00 PM)</small></h4>
+        </div>
+        <ul class="time-places">
+          {% for place in places[(2 * places|length // 3):] %}
+            <li>
+              <div class="place-info">
+                <span class="place-number-small">{{ loop.index + (2 * places|length // 3) }}</span>
+                <strong>{{ place.name }}</strong>
+              </div>
+              <span class="place-rating">{{ place.rating or 'N/A' }} ⭐</span>
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <div class="itinerary-info">
+    <h3>💡 Time-Based Planning</h3>
+    <p style="color: #666;">Select 3 or more places to see your full-day schedule with morning, afternoon, and evening activities!</p>
+  </div>
+  {% endif %}
+
+  <div style="max-width: 1200px; margin: 0 auto; padding: 0 20px;">
+    <div id="map"></div>
+  </div>
+
+  <div style="text-align: center;">
+    <a href="/" class="back-btn">← Back to Search</a>
+  </div>
+
+  <script src="https://maps.googleapis.com/maps/api/js?key={{ api_key }}&libraries=geometry&callback=initMap" async defer></script>
+  <script>
+    // Global variables for export functions
+    var directionsData = {{ directions | tojson | safe }};
+    var placesData = {{ places | tojson | safe }};
+    
+    // Budget calculation function
+    function calculateAndDisplayBudget() {
+      if (!placesData || placesData.length === 0) return;
+      
+      // Use passed budget estimate if available (for demo trips), otherwise calculate
+      const budgetEstimate = {{ budget_estimate | tojson | safe }};
+      
+      let budget, total;
+      
+      if (budgetEstimate && budgetEstimate.breakdown) {
+        // Use passed budget estimate
+        budget = budgetEstimate.breakdown;
+        total = budgetEstimate.total;
+      } else {
+        // Calculate budget dynamically for live trips
+        budget = {
+          transportation: 25,
+          food: 0,
+          activities: 0,
+          accommodation: 0
+        };
+        
+        placesData.forEach(place => {
+          const priceLevel = place.price_level || 2;
+          const types = place.types || [];
+          
+          // Food costs
+          if (types.some(type => ['restaurant', 'food', 'meal_takeaway', 'cafe'].includes(type))) {
+            const foodCosts = [15, 25, 45, 75, 120];
+            budget.food += foodCosts[Math.min(priceLevel, 4)];
+          }
+          
+          // Activity costs
+          else if (types.some(type => ['tourist_attraction', 'museum', 'amusement_park', 'zoo', 'aquarium'].includes(type))) {
+            const activityCosts = [10, 20, 35, 50, 80];
+            budget.activities += activityCosts[Math.min(priceLevel, 4)];
+          }
+          
+          // Accommodation costs
+          else if (types.some(type => ['lodging', 'hotel'].includes(type))) {
+            const accCosts = [60, 120, 200, 350, 500];
+            budget.accommodation += accCosts[Math.min(priceLevel, 4)];
+          }
+        });
+        
+        const subtotal = budget.transportation + budget.food + budget.activities + budget.accommodation;
+        const miscellaneous = Math.round(subtotal * 0.1);
+        total = subtotal + miscellaneous;
+      }
+      
+      // Update the display
+      document.getElementById('total-budget').textContent = '$' + total;
+      
+      // Calculate miscellaneous for display if not provided
+      const miscellaneous = budgetEstimate && budgetEstimate.miscellaneous ? 
+                          budgetEstimate.miscellaneous : 
+                          Math.round((budget.transportation + budget.food + budget.activities + budget.accommodation) * 0.1);
+      
+      const breakdownDiv = document.getElementById('budget-breakdown');
+      breakdownDiv.innerHTML = `
+        <div style="background: linear-gradient(135deg, #f39c12, #e67e22); color: white; padding: 15px; border-radius: 10px; box-shadow: 0 4px 15px rgba(243, 156, 18, 0.3);">
+          <div style="font-size: 1.3rem; font-weight: 700;">$${budget.transportation}</div>
+          <div style="font-size: 0.9rem; opacity: 0.9;">Transportation</div>
+        </div>
+        <div style="background: linear-gradient(135deg, #e74c3c, #c0392b); color: white; padding: 15px; border-radius: 10px; box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3);">
+          <div style="font-size: 1.3rem; font-weight: 700;">$${budget.food}</div>
+          <div style="font-size: 0.9rem; opacity: 0.9;">Food & Dining</div>
+        </div>
+        <div style="background: linear-gradient(135deg, #9b59b6, #8e44ad); color: white; padding: 15px; border-radius: 10px; box-shadow: 0 4px 15px rgba(155, 89, 182, 0.3);">
+          <div style="font-size: 1.3rem; font-weight: 700;">$${budget.activities}</div>
+          <div style="font-size: 0.9rem; opacity: 0.9;">Activities</div>
+        </div>
+        <div style="background: linear-gradient(135deg, #1abc9c, #16a085); color: white; padding: 15px; border-radius: 10px; box-shadow: 0 4px 15px rgba(26, 188, 156, 0.3);">
+          <div style="font-size: 1.3rem; font-weight: 700;">$${miscellaneous}</div>
+          <div style="font-size: 0.9rem; opacity: 0.9;">Miscellaneous</div>
+        </div>
+      `;
+    }
+    
+    // Call budget calculation when page loads
+    document.addEventListener('DOMContentLoaded', calculateAndDisplayBudget);
+    
+    function initMap() {
+      console.log('🗺️ Directions data:', directionsData);
+      console.log('📍 Places data:', placesData);
+
+      // Validate coordinates function
+      function isValidCoordinate(lat, lng) {
+        return lat !== null && lng !== null && 
+               lat !== undefined && lng !== undefined &&
+               lat !== 0 && lng !== 0 &&
+               lat >= -90 && lat <= 90 && 
+               lng >= -180 && lng <= 180;
+      }
+
+      // Find first valid place for map center
+      let mapCenter = { lat: 43.653226, lng: -79.3831843 }; // Default to Toronto
+      for (let i = 0; i < placesData.length; i++) {
+        const place = placesData[i];
+        if (place.geometry && place.geometry.location) {
+          const lat = place.geometry.location.lat;
+          const lng = place.geometry.location.lng;
+          if (isValidCoordinate(lat, lng)) {
+            mapCenter = { lat: lat, lng: lng };
+            console.log('✅ Using valid map center:', mapCenter);
+            break;
+          } else {
+            console.warn('⚠️ Invalid coordinates for place:', place.name, lat, lng);
+          }
+        }
+      }
+
+      // Create map centered on first valid place
+      const map = new google.maps.Map(document.getElementById("map"), {
+        zoom: 13,
+        center: mapCenter,
+      });
+
+      // Create directions renderer and service
+      const directionsRenderer = new google.maps.DirectionsRenderer({
+        draggable: false,
+        panel: null // We'll show our custom place list instead
+      });
+      directionsRenderer.setMap(map);
+
+      // Display the directions on the map
+      if (directionsData.status === 'OK' && directionsData.routes && directionsData.routes.length > 0) {
+        // For the new Routes API format, we need to handle it differently
+        const route = directionsData.routes[0];
+        
+        if (route.overview_polyline && route.overview_polyline.points) {
+          // Create a polyline from the encoded polyline string
+          const decodedPath = google.maps.geometry.encoding.decodePath(route.overview_polyline.points);
+          
+          // Validate polyline coordinates
+          const validPath = decodedPath.filter(point => 
+            isValidCoordinate(point.lat(), point.lng())
+          );
+          
+          if (validPath.length > 0) {
+            const routeLine = new google.maps.Polyline({
+              path: validPath,
+              geodesic: true,
+              strokeColor: '#e67e22',
+              strokeOpacity: 1.0,
+              strokeWeight: 4
+            });
+            
+            routeLine.setMap(map);
+            
+            // Fit the map to show the entire route with valid coordinates only
+            const bounds = new google.maps.LatLngBounds();
+            validPath.forEach(point => bounds.extend(point));
+            map.fitBounds(bounds);
+            
+            console.log('✅ Route rendered successfully with', validPath.length, 'valid points');
+          } else {
+            console.warn('⚠️ No valid coordinates in polyline, skipping route display');
+          }
+        } else {
+          console.log('⚠️ No polyline data available, falling back to markers only');
+        }
+      } else {
+        console.error('❌ Directions error:', directionsData.status || 'No routes available');
+      }
+
+      // Add numbered markers for each place with coordinate validation
+      placesData.forEach((place, index) => {
+        const lat = place.geometry.location.lat;
+        const lng = place.geometry.location.lng;
+        
+        if (!isValidCoordinate(lat, lng)) {
+          console.warn('⚠️ Skipping invalid coordinates for place:', place.name, lat, lng);
+          return;
+        }
+        
+        const marker = new google.maps.Marker({
+          position: {
+            lat: lat,
+            lng: lng,
+          },
+          map: map,
+          title: place.name,
+          label: {
+            text: (index + 1).toString(),
+            color: 'white',
+            fontWeight: 'bold'
+          },
+          icon: {
+            url: 'https://maps.google.com/mapfiles/ms/icons/orange-dot.png',
+            labelOrigin: new google.maps.Point(16, 10)
+          }
+        });
+
+        // Add info window for each marker
+        const infoWindow = new google.maps.InfoWindow({
+          content: `
+            <div style="padding: 10px; max-width: 250px;">
+              <h3 style="margin: 0 0 10px 0; color: #2c3e50;">Stop ${index + 1}: ${place.name}</h3>
+              <p style="margin: 0; color: #666;"><strong>Rating:</strong> ${place.rating || 'N/A'} ⭐</p>
+              <p style="margin: 5px 0 0 0; color: #666;"><strong>📍 Address:</strong> ${place.vicinity || 'N/A'}</p>
+              ${place.price_level ? `<p style="margin: 5px 0 0 0; color: #666;"><strong>Price:</strong> ${'$'.repeat(place.price_level)}</p>` : ''}
+            </div>
+          `
+        });
+
+        marker.addListener("click", () => {
+          infoWindow.open(map, marker);
+        });
+      });
+    }
+
+    // Error handling
+    window.gm_authFailure = function() {
+      console.error('Google Maps API authentication failed');
+      document.getElementById('map').innerHTML = '<p style="color: red; padding: 20px;">Google Maps API authentication failed. Please check your API key.</p>';
+    };
+
+    // 📤 Phase 4.4 - Export Functions
+    async function exportToPDF() {
+      const feedback = document.getElementById('action-feedback');
+      feedback.style.color = '#3498db';
+      feedback.textContent = '🔄 Generating PDF...';
+      
+      try {
+        // Check if data is available
+        if (!placesData || placesData.length === 0) {
+          throw new Error('No places data available for export');
+        }
+        
+        const response = await fetch('/export-pdf', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            places: placesData,
+            route_info: {
+              distance: directionsData?.routes?.[0]?.distance ? `${(directionsData.routes[0].distance / 1000).toFixed(1)} km` : 'Unknown',
+              duration: directionsData?.routes?.[0]?.duration ? `${Math.round(directionsData.routes[0].duration / 60)} min` : 'Unknown'
+            }
+          })
+        });
+        
+        if (response.ok) {
+          const blob = await response.blob();
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.style.display = 'none';
+          a.href = url;
+          a.download = `WanderWhiz_Itinerary_${new Date().toISOString().split('T')[0]}.pdf`;
+          document.body.appendChild(a);
+          a.click();
+          window.URL.revokeObjectURL(url);
+          
+          feedback.style.color = '#27ae60';
+          feedback.textContent = '✅ PDF downloaded successfully!';
+        } else {
+          const errorText = await response.text();
+          throw new Error(`Server error: ${errorText}`);
+        }
+      } catch (error) {
+        feedback.style.color = '#e74c3c';
+        feedback.textContent = `❌ Failed to generate PDF: ${error.message}`;
+        console.error('PDF export error:', error);
+      }
+      
+      setTimeout(() => feedback.textContent = '', 3000);
+    }
+
+    async function generateMapsLink() {
+      const feedback = document.getElementById('action-feedback');
+      feedback.style.color = '#3498db';
+      feedback.textContent = '🔄 Generating Google Maps link...';
+      
+      try {
+        // Check if data is available
+        if (!placesData || placesData.length === 0) {
+          throw new Error('No places data available for Maps link');
+        }
+        
+        const response = await fetch('/generate-maps-link', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            places: placesData
+          })
+        });
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Server error: ${errorText}`);
+        }
+        
+        const data = await response.json();
+        
+        if (data.maps_url) {
+          window.open(data.maps_url, '_blank');
+          feedback.style.color = '#27ae60';
+          feedback.textContent = '✅ Opened in Google Maps!';
+        } else {
+          throw new Error('No maps URL generated');
+        }
+      } catch (error) {
+        feedback.style.color = '#e74c3c';
+        feedback.textContent = `❌ Failed to generate Maps link: ${error.message}`;
+        console.error('Maps link error:', error);
+      }
+      
+      setTimeout(() => feedback.textContent = '', 3000);
+    }
+
+    // 🗺️ Phase 4.5 - Save Functions
+    async function saveItinerary() {
+      const feedback = document.getElementById('action-feedback');
+      const tripName = prompt('Enter a name for your trip:', `Trip ${new Date().toLocaleDateString()}`);
+      
+      if (!tripName) return;
+      
+      // Check if data is available
+      if (!placesData || placesData.length === 0) {
+        feedback.style.color = '#e74c3c';
+        feedback.textContent = '❌ No places data available to save';
+        setTimeout(() => feedback.textContent = '', 3000);
+        return;
+      }
+      
+      feedback.style.color = '#3498db';
+      feedback.textContent = '🔄 Saving itinerary...';
+      
+      try {
+        const response = await fetch('/save-itinerary', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            name: tripName,
+            places: placesData,
+            route_info: {
+              distance: directionsData?.routes?.[0]?.distance || 0,
+              duration: directionsData?.routes?.[0]?.duration || 0
+            },
+            city: placesData[0]?.vicinity?.split(',')[0] || 'Unknown'
+          })
+        });
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Server error: ${errorText}`);
+        }
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          feedback.style.color = '#27ae60';
+          feedback.textContent = '✅ Itinerary saved successfully!';
+        } else {
+          throw new Error(data.error || 'Failed to save');
+        }
+      } catch (error) {
+        feedback.style.color = '#e74c3c';
+        feedback.textContent = `❌ Failed to save itinerary: ${error.message}`;
+        console.error('Save error:', error);
+      }
+      
+      setTimeout(() => feedback.textContent = '', 3000);
+    }
+
+    //  Phase 4.7 - Easter Eggs
+    function addEasterEggs() {
+      const gems = ['💎', '🎯', '🧭', '⭐', '🎪', '🎭'];
+      const tips = [
+        'This place is a local favorite!',
+        'Hidden gem - fewer tourists!',
+        'Best time to visit: early morning',
+        'Don\'t forget to try the local specialties!',
+        'Perfect for photos!',
+        'Local tip: Ask for recommendations here!'
+      ];
+      
+      // Add random easter eggs to highly rated places
+      const placeCards = document.querySelectorAll('.place-card');
+      placeCards.forEach((card, index) => {
+        const place = placesData[index];
+        if (place.rating && place.rating >= 4.5) {
+          const randomGem = gems[Math.floor(Math.random() * gems.length)];
+          const randomTip = tips[Math.floor(Math.random() * tips.length)];
+          
+          const easterEgg = document.createElement('div');
+          easterEgg.style.cssText = `
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            z-index: 10;
+            transition: transform 0.2s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+          `;
+          easterEgg.innerHTML = `${randomGem} Hidden Gem`;
+          easterEgg.title = randomTip;
+          
+          // Add hover effect
+          easterEgg.addEventListener('mouseenter', () => {
+            easterEgg.style.transform = 'scale(1.05)';
+          });
+          
+          easterEgg.addEventListener('mouseleave', () => {
+            easterEgg.style.transform = 'scale(1)';
+          });
+          
+          card.style.position = 'relative';
+          card.appendChild(easterEgg);
+          
+          // Add click animation and feedback
+          easterEgg.addEventListener('click', (e) => {
+            e.stopPropagation(); // Prevent event bubbling
+            
+            // Scale animation
+            easterEgg.style.transform = 'scale(1.3)';
+            easterEgg.style.background = 'linear-gradient(45deg, #27ae60, #2ecc71)';
+            
+            setTimeout(() => {
+              easterEgg.style.transform = 'scale(1)';
+              easterEgg.style.background = 'linear-gradient(45deg, #ff6b6b, #ee5a24)';
+            }, 300);
+            
+            // Show feedback message
+            const feedback = document.getElementById('action-feedback');
+            if (feedback) {
+              feedback.style.color = '#9b59b6';
+              feedback.style.fontSize = '1rem';
+              feedback.innerHTML = `🎁 <strong>${randomTip}</strong>`;
+              
+              // Clear previous timeout if exists
+              if (window.feedbackTimeout) {
+                clearTimeout(window.feedbackTimeout);
+              }
+              
+              // Set new timeout
+              window.feedbackTimeout = setTimeout(() => {
+                feedback.innerHTML = '';
+              }, 4000);
+            } else {
+              console.warn('Feedback element not found');
+            }
+            
+            // Add sparkle effect
+            const sparkle = document.createElement('div');
+            sparkle.innerHTML = '✨';
+            sparkle.style.cssText = `
+              position: absolute;
+              top: -10px;
+              right: -5px;
+              font-size: 1.2rem;
+              animation: sparkle 1s ease-out forwards;
+              pointer-events: none;
+              z-index: 20;
+            `;
+            
+            // Add sparkle animation keyframes
+            if (!document.getElementById('sparkle-style')) {
+              const style = document.createElement('style');
+              style.id = 'sparkle-style';
+              style.textContent = `
+                @keyframes sparkle {
+                  0% { opacity: 1; transform: scale(0) rotate(0deg); }
+                  50% { opacity: 1; transform: scale(1.2) rotate(180deg); }
+                  100% { opacity: 0; transform: scale(0) rotate(360deg); }
+                }
+              `;
+              document.head.appendChild(style);
+            }
+            
+            easterEgg.appendChild(sparkle);
+            
+            // Remove sparkle after animation
+            setTimeout(() => {
+              if (sparkle && sparkle.parentNode) {
+                sparkle.parentNode.removeChild(sparkle);
+              }
+            }, 1000);
+          });
+        }
+      });
+    }
+    
+    // Add easter eggs after map loads
+    setTimeout(addEasterEggs, 1000);
+  </script>
+
+  <!-- 💬 Floating GPT Assistant -->
+  <style>
+    #chat-toggle {
+      position: fixed;
+      bottom: 25px;
+      right: 25px;
+      background: linear-gradient(135deg, #3498db, #2980b9);
+      color: white;
+      border: none;
+      padding: 16px;
+      border-radius: 50%;
+      font-size: 22px;
+      cursor: pointer;
+      z-index: 1000;
+      box-shadow: 0 4px 12px rgba(52, 152, 219, 0.4);
+      transition: all 0.3s ease;
+    }
+    
+    #chat-toggle:hover {
+      transform: scale(1.1);
+      box-shadow: 0 6px 16px rgba(52, 152, 219, 0.6);
+    }
+    
+    #chat-box {
+      display: none;
+      position: fixed;
+      bottom: 90px;
+      right: 25px;
+      width: 350px;
+      background: white;
+      border: 1px solid #e9ecef;
+      border-radius: 15px;
+      z-index: 999;
+      padding: 0;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+      overflow: hidden;
+    }
+    
+    #chat-header {
+      background: linear-gradient(135deg, #3498db, #2980b9);
+      color: white;
+      padding: 15px;
+      font-weight: 600;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    #chat-close {
+      background: none;
+      border: none;
+      color: white;
+      font-size: 18px;
+      cursor: pointer;
+      padding: 0;
+    }
+    
+    #chat-messages {
+      max-height: 300px;
+      overflow-y: auto;
+      padding: 15px;
+      background: #f8f9fa;
+    }
+    
+    /* Enhanced Chat container bubble styles */
+    .chat-message {
+      margin: 12px 0;
+      padding: 14px 18px;
+      border-radius: 18px;
+      max-width: 75%;
+      line-height: 1.5;
+      word-wrap: break-word;
+      display: block;
+      clear: both;
+      position: relative;
+      animation: fadeInUp 0.3s ease-out;
+      font-size: 14px;
+    }
+    
+    /* User message (right side) - iMessage blue style */
+    .chat-user {
+      background-color: #007bff !important;
+      color: white !important;
+      text-align: left !important;
+      margin-left: auto !important;
+      margin-right: 8px !important;
+      border-top-right-radius: 4px !important;
+      border-bottom-right-radius: 18px !important;
+      box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3) !important;
+      float: right !important;
+      clear: both !important;
+    }
+    
+    /* AI message (left side) - Clean gray style */
+    .chat-ai {
+      background-color: #f0f0f0 !important;
+      color: #333 !important;
+      text-align: left !important;
+      margin-right: auto !important;
+      margin-left: 8px !important;
+      border-top-left-radius: 4px !important;
+      border-bottom-left-radius: 18px !important;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1) !important;
+      float: left !important;
+      clear: both !important;
+    }
+    
+    /* Smooth fade-in animation for new messages */
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    /* Enhanced styling for markdown elements */
+    .chat-message strong {
+      font-weight: 700;
+    }
+    
+    .chat-message code {
+      background: rgba(0, 0, 0, 0.1);
+      padding: 2px 4px;
+      border-radius: 4px;
+      font-family: 'Monaco', 'Consolas', monospace;
+      font-size: 0.9em;
+    }
+    
+    .chat-message ul, .chat-message ol {
+      margin: 8px 0;
+      padding-left: 20px;
+    }
+    
+    .chat-message li {
+      margin: 4px 0;
+    }
+    
+    #chat-input-container {
+      padding: 15px;
+      background: white;
+      border-top: 1px solid #e9ecef;
+      display: flex;
+      gap: 10px;
+    }
+    
+    .typing-indicator {
+      display: none;
+      padding: 12px 16px;
+      font-style: italic;
+      color: #7f8c8d;
+      background: #f8f9fa;
+      border-radius: 18px;
+      margin: 8px 0;
+      max-width: 80%;
+      margin-right: auto;
+      border-top-left-radius: 4px;
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 0.7; }
+      50% { opacity: 1; }
+    }
+    
+    /* Enhanced input styling */
+    #chat-input {
+      flex: 1;
+      border: 2px solid #e9ecef;
+      border-radius: 20px;
+      padding: 12px 16px;
+      outline: none;
+      resize: none;
+      height: 40px;
+      font-family: inherit;
+      transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    #chat-input:focus {
+      border-color: #3498db;
+      box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+    }
+    
+    /* Enhanced send button */
+    #chat-send {
+      background: linear-gradient(135deg, #3498db, #2980b9);
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 42px;
+      height: 42px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s ease;
+      font-size: 16px;
+      box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
+    }
+    
+    #chat-send:hover:not(:disabled) {
+      transform: scale(1.05) rotate(15deg);
+      box-shadow: 0 4px 12px rgba(52, 152, 219, 0.4);
+    }
+    
+    #chat-send:disabled {
+      background: #bdc3c7;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+  </style>
+
+  <button id="chat-toggle" title="Chat with Trippi about your itinerary">💬</button>
+
+  <div id="chat-box">
+    <div id="chat-header">
+      <span>🌟 Trippi - Your Trip Assistant</span>
+      <button id="chat-close">×</button>
+    </div>
+    <div id="chat-messages">
+      <div class="chat-message chat-ai">
+        👋 Hey! I'm Trippi and I can see your amazing {{ city }} itinerary with <strong id="place-count">{{ places|length }}</strong> places and a ${{ budget_estimate.total if budget_estimate else 'TBD' }} budget! 💰 Ask me about saving money, optimizing your route, local tips, or anything about your trip! ✨
+      </div>
+      <div style="clear: both; height: 8px;"></div>
+    </div>
+    <div class="typing-indicator" id="typing-indicator">
+      🤔 Trippi is thinking about your trip...
+    </div>
+    <div id="chat-input-container">
+      <textarea id="chat-input" placeholder="Ask Trippi: 'How can I save money?' or 'What's near my hotel?'" rows="1"></textarea>
+      <button id="chat-send" title="Send message to Trippi">➤</button>
+    </div>
+  </div>
+
+  <script>
+    // Chat toggle functionality
+    document.getElementById("chat-toggle").onclick = () => {
+      const box = document.getElementById("chat-box");
+      box.style.display = (box.style.display === "block") ? "none" : "block";
+    };
+    
+    document.getElementById("chat-close").onclick = () => {
+      document.getElementById("chat-box").style.display = "none";
+    };
+
+    // Auto-resize textarea
+    document.getElementById("chat-input").addEventListener('input', function() {
+      this.style.height = 'auto';
+      this.style.height = Math.min(this.scrollHeight, 100) + 'px';
+    });
+
+    // Send on Enter (but not Shift+Enter)
+    document.getElementById("chat-input").addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendChat();
+      }
+    });
+
+    document.getElementById("chat-send").onclick = sendChat;
+
+    async function sendChat() {
+      const input = document.getElementById("chat-input");
+      const sendBtn = document.getElementById("chat-send");
+      const messages = document.getElementById("chat-messages");
+      const typing = document.getElementById("typing-indicator");
+      
+      const msg = input.value.trim();
+      if (!msg) return;
+
+      // Enhanced message rendering with markdown support
+      function renderMessage(text, isUser = false) {
+        // Simple markdown parsing for common patterns
+        let rendered = text
+          .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+          .replace(/\*(.*?)\*/g, '<em>$1</em>')
+          .replace(/`(.*?)`/g, '<code>$1</code>')
+          .replace(/\n/g, '<br>');
+        
+        return rendered;
+      }
+
+      // Auto-scroll function with smooth animation
+      function scrollToBottom() {
+        const chatBox = document.getElementById("chat-messages");
+        chatBox.scrollTo({
+          top: chatBox.scrollHeight,
+          behavior: 'smooth'
+        });
+      }
+
+      // Add user message with enhanced styling and markdown
+      const userMessage = renderMessage(msg, true);
+      messages.innerHTML += `<div class="chat-message chat-user">${userMessage}</div><div style="clear: both; height: 8px;"></div>`;
+      
+      input.value = "";
+      input.style.height = 'auto';
+      sendBtn.disabled = true;
+      typing.style.display = 'block';
+      
+      // Smooth scroll to bottom after user message
+      scrollToBottom();
+
+      try {
+        // Prepare comprehensive trip context for Trippi on itinerary page
+        const tripContext = {
+          city: "{{ city }}",
+          places: placesData || [],
+          budget_estimate: {{ budget_estimate | tojson | safe }} || null,
+          total_distance: {{ total_distance | default(0) }},
+          total_duration: {{ total_duration | default(0) }},
+          gpt_prompt: "{{ gpt_prompt if gpt_prompt else '' }}",
+          route_info: directionsData?.routes?.[0] || null,
+          polyline: directionsData?.routes?.[0]?.overview_polyline?.points || ""
+        };
+        
+        console.log("Sending trip context to Trippi:", tripContext);
+        
+        const res = await fetch("/ask", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ 
+            question: msg,
+            trip_context: tripContext
+          })
+        });
+
+        const data = await res.json();
+        
+        // Add AI response with enhanced styling and markdown parsing
+        if (data.error) {
+          messages.innerHTML += `<div class="chat-message chat-ai" style="color: #e74c3c;">❌ ${data.error}</div><div style="clear: both; height: 8px;"></div>`;
+        } else {
+          const answer = data.answer || "Sorry, I couldn't process that request.";
+          const aiMessage = renderMessage(answer, false);
+          
+          // Add context indicator for Trippi
+          const contextIndicator = data.has_trip_context ? 
+            `<div style="font-size: 11px; color: #7f8c8d; margin-bottom: 8px;">📊 <em>Analyzing your {{ city }} trip (${tripContext.places.length} places, $${tripContext.budget_estimate?.total || 'TBD'})</em></div>` : '';
+          
+          messages.innerHTML += `<div class="chat-message chat-ai">${contextIndicator}${aiMessage}</div><div style="clear: both; height: 8px;"></div>`;
+        }
+        
+      } catch (error) {
+        console.error('Chat error:', error);
+        messages.innerHTML += `<div class="chat-message chat-ai">Sorry, something went wrong. Please try again! 😞</div><div style="clear: both; height: 8px;"></div>`;
+      } finally {
+        typing.style.display = 'none';
+        sendBtn.disabled = false;
+        
+        // Smooth scroll to bottom after AI response
+        setTimeout(() => {
+          scrollToBottom();
+        }, 100); // Small delay to ensure content is rendered
+      }
+    }
+  </script>
+</body>
+</html>
