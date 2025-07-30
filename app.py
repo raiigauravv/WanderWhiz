@@ -854,6 +854,7 @@ def get_route_directions(places):
 def index():
     """
     Main application route that handles the landing page and basic place searches.
+    Updated: Jul 30, 2025 - Force deployment after Vercel issue
     
     GET: Renders the main page with default values
     POST: Processes city/interest form submissions and fetches places
