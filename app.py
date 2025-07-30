@@ -2730,9 +2730,7 @@ def join_trip():
             
     except Exception as e:
         print(f"❌ Error joining trip: {e}")
-        import traceback
-        traceback.print_exc()
-        return jsonify({'error': f'Internal server error: {str(e)}'}), 500
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/collaborative-trip/<trip_id>')
 def get_collaborative_trip(trip_id):
@@ -2817,15 +2815,23 @@ def collaborate_page(share_code):
             return render_template('error.html', 
                                  error="Collaborative features not available")
         
-        # Find trip by share code using collaborative_manager
-        trip_data = collaborative_manager.get_trip_by_share_code(share_code)
+        # Find trip by share code using Firestore
+        from firebase_admin import firestore
+        db = firestore.client()
+        share_ref = db.collection('share_codes').document(share_code)
+        share_doc = share_ref.get()
+        
+        if not share_doc.exists:
+            return render_template('error.html', 
+                                 error="Invalid share code")
+        
+        share_data = share_doc.to_dict()
+        trip_id = share_data['trip_id']
+        trip_data = collaborative_manager.get_collaborative_trip(trip_id)
         
         if not trip_data:
             return render_template('error.html', 
-                                 error="Invalid share code or trip not found")
-        
-        # Extract trip_id from trip_data
-        trip_id = trip_data.get('trip_id') or trip_data.get('id')
+                                 error="Trip not found")
         
         return render_template('collaborative_trip.html', 
                              trip_data=trip_data, 
