@@ -2272,3 +2272,23 @@ def clear_session():
     """Clear session data for debugging"""
     session.clear()
     return "Session cleared! <a href='/'>Go back to home</a>"
+
+@app.route("/debug-env")
+def debug_env():
+    """Debug endpoint to check environment variables"""
+    env_status = {
+        "google_maps_api_key": "✅ Set" if GOOGLE_MAPS_API_KEY else "❌ Missing",
+        "openai_api_key": "✅ Set" if OPENAI_API_KEY else "❌ Missing",
+        "firebase_config": "✅ Set" if os.getenv("FIREBASE_CONFIG") else "❌ Missing",
+        "google_maps_key_length": len(GOOGLE_MAPS_API_KEY) if GOOGLE_MAPS_API_KEY else 0,
+        "openai_key_length": len(OPENAI_API_KEY) if OPENAI_API_KEY else 0
+    }
+    return f"""
+    <h2>🔧 Environment Variables Status</h2>
+    <ul>
+        <li>Google Maps API Key: {env_status['google_maps_api_key']} (Length: {env_status['google_maps_key_length']})</li>
+        <li>OpenAI API Key: {env_status['openai_api_key']} (Length: {env_status['openai_key_length']})</li>
+        <li>Firebase Config: {env_status['firebase_config']}</li>
+    </ul>
+    <p><a href='/'>← Back to Home</a></p>
+    """
