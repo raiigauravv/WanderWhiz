@@ -2833,6 +2833,35 @@ def collaborate_page(share_code):
             return render_template('error.html', 
                                  error="Trip not found")
         
+        # Defensive programming: ensure trip_data has proper structure
+        if 'trip_data' not in trip_data:
+            trip_data['trip_data'] = {}
+        
+        if 'places' not in trip_data['trip_data']:
+            trip_data['trip_data']['places'] = []
+        
+        # Clean and validate places data
+        places = trip_data['trip_data']['places']
+        if not isinstance(places, list):
+            trip_data['trip_data']['places'] = []
+        else:
+            # Ensure each place has required fields
+            cleaned_places = []
+            for place in places:
+                if isinstance(place, dict):
+                    # Ensure place has required fields
+                    if 'name' not in place:
+                        place['name'] = 'Unknown Place'
+                    if 'place_id' not in place:
+                        place['place_id'] = f'place_{len(cleaned_places)}'
+                    if 'rating' not in place:
+                        place['rating'] = 0
+                    cleaned_places.append(place)
+            trip_data['trip_data']['places'] = cleaned_places
+        
+        print(f"🔍 Debug cleaned trip_data keys: {list(trip_data.keys())}")
+        print(f"🔍 Debug places count: {len(trip_data['trip_data']['places'])}")
+        
         return render_template('collaborative_trip.html', 
                              trip_data=trip_data, 
                              share_code=share_code,
@@ -2840,6 +2869,8 @@ def collaborate_page(share_code):
                              
     except Exception as e:
         print(f"❌ Error loading collaborative page: {e}")
+        import traceback
+        traceback.print_exc()
         return render_template('error.html', 
                              error="Failed to load collaborative trip")
 
