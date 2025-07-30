@@ -27,6 +27,8 @@ from flask import Flask, render_template, request, jsonify, send_file, session
 from dotenv import load_dotenv
 import os
 import json
+import math
+import traceback
 from datetime import datetime
 import uuid
 
@@ -920,7 +922,6 @@ def gpt_assist():
 
     except Exception as e:
         print(f"💥 GPT Error: {e}")
-        import traceback
         traceback.print_exc()
         return render_template("index.html", 
                              api_key=GOOGLE_MAPS_API_KEY,
