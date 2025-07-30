@@ -691,12 +691,24 @@
       // Use passed budget estimate if available (for demo trips), otherwise calculate
       const budgetEstimate = {{ budget_estimate | tojson | safe }};
       
+      // Store budget estimate in window for access by other functions
+      window.pageBudgetEstimate = budgetEstimate;
+      
       let budget, total;
       
       if (budgetEstimate && budgetEstimate.breakdown) {
-        // Use passed budget estimate
+        // Use passed budget estimate (nested structure)
         budget = budgetEstimate.breakdown;
         total = budgetEstimate.total;
+      } else if (budgetEstimate && budgetEstimate.transportation !== undefined) {
+        // Use passed budget estimate (flat structure)
+        budget = {
+          transportation: budgetEstimate.transportation || 0,
+          food: budgetEstimate.food || 0,
+          activities: budgetEstimate.activities || 0,
+          accommodation: 0  // Not used in flat structure
+        };
+        total = budgetEstimate.total || 0;
       } else {
         // Calculate budget dynamically for live trips
         budget = {
@@ -737,10 +749,12 @@
       // Update the display
       document.getElementById('total-budget').textContent = '$' + total;
       
-      // Calculate miscellaneous for display if not provided
+      // Calculate miscellaneous for display - handle both flat and nested structures
       const miscellaneous = budgetEstimate && budgetEstimate.miscellaneous ? 
                           budgetEstimate.miscellaneous : 
-                          Math.round((budget.transportation + budget.food + budget.activities + budget.accommodation) * 0.1);
+                          (budgetEstimate && budgetEstimate.breakdown ? 
+                           Math.round((budget.transportation + budget.food + budget.activities + budget.accommodation) * 0.1) :
+                           Math.round((budget.transportation + budget.food + budget.activities + budget.accommodation) * 0.1));
       
       const breakdownDiv = document.getElementById('budget-breakdown');
       breakdownDiv.innerHTML = `
@@ -921,6 +935,7 @@
           },
           body: JSON.stringify({
             places: placesData,
+            city: "{{ city }}", // Include the city name
             route_info: {
               distance: directionsData?.routes?.[0]?.distance ? `${(directionsData.routes[0].distance / 1000).toFixed(1)} km` : 'Unknown',
               duration: directionsData?.routes?.[0]?.duration ? `${Math.round(directionsData.routes[0].duration / 60)} min` : 'Unknown'
@@ -934,7 +949,7 @@
           const a = document.createElement('a');
           a.style.display = 'none';
           a.href = url;
-          a.download = `WanderWhiz_Itinerary_${new Date().toISOString().split('T')[0]}.pdf`;
+          a.download = `WanderWhiz_{{ city }}_Itinerary_${new Date().toISOString().split('T')[0]}.pdf`;
           document.body.appendChild(a);
           a.click();
           window.URL.revokeObjectURL(url);
@@ -999,6 +1014,119 @@
     }
 
     // 🗺️ Phase 4.5 - Save Functions
+    
+    // Helper function to extract city from places data
+    function extractCityFromPlaces(places) {
+      if (!places || places.length === 0) return 'Unknown';
+      
+      // Try to get city from formatted_address
+      for (let place of places) {
+        if (place.formatted_address) {
+          const parts = place.formatted_address.split(',');
+          if (parts.length >= 2) {
+            return parts[parts.length - 2].trim(); // Get the city part
+          }
+        }
+      }
+      
+      // Fallback to vicinity
+      if (places[0]?.vicinity) {
+        return places[0].vicinity.split(',')[0] || 'Unknown';
+      }
+      
+      return 'Unknown';
+    }
+    
+    // Helper function to calculate budget estimate
+    function validateAndCleanBudget(budget) {
+      /**
+       * Validates and cleans budget data to prevent corruption
+       * Returns a clean budget object with valid numeric values
+       */
+      if (!budget || typeof budget !== 'object') {
+        return { total: 0, breakdown: {} };
+      }
+      
+      const cleanBudget = { breakdown: {} };
+      
+      // Clean total value
+      const total = budget.total;
+      if (typeof total === 'number' && !isNaN(total) && isFinite(total)) {
+        cleanBudget.total = Math.max(0, Math.round(total));
+      } else if (typeof total === 'string' && !isNaN(parseFloat(total))) {
+        cleanBudget.total = Math.max(0, Math.round(parseFloat(total)));
+      } else {
+        cleanBudget.total = 0;
+      }
+      
+      // Clean breakdown values
+      const breakdown = budget.breakdown || {};
+      const validCategories = ['transportation', 'food', 'activities', 'attractions', 'entertainment', 'accommodation', 'other', 'miscellaneous'];
+      
+      for (const category of validCategories) {
+        const value = breakdown[category];
+        if (typeof value === 'number' && !isNaN(value) && isFinite(value)) {
+          cleanBudget.breakdown[category] = Math.max(0, Math.round(value));
+        } else if (typeof value === 'string' && !isNaN(parseFloat(value))) {
+          cleanBudget.breakdown[category] = Math.max(0, Math.round(parseFloat(value)));
+        }
+        // Skip invalid values (undefined, NaN, null, etc.)
+      }
+      
+      // Clean miscellaneous if it exists at top level
+      if (budget.miscellaneous !== undefined) {
+        const misc = budget.miscellaneous;
+        if (typeof misc === 'number' && !isNaN(misc) && isFinite(misc)) {
+          cleanBudget.miscellaneous = Math.max(0, Math.round(misc));
+        } else if (typeof misc === 'string' && !isNaN(parseFloat(misc))) {
+          cleanBudget.miscellaneous = Math.max(0, Math.round(parseFloat(misc)));
+        }
+      }
+      
+      return cleanBudget;
+    }
+
+    function calculateBudgetEstimate(places) {
+      let totalCost = 0;
+      let breakdown = {};
+      
+      if (!places || places.length === 0) {
+        return { total: 0, breakdown: {} };
+      }
+      
+      places.forEach(place => {
+        const priceLevel = place.price_level || 1;
+        let estimatedCost = 0;
+        
+        // Estimate based on place types and price level
+        if (place.types?.includes('restaurant') || place.types?.includes('meal_takeaway')) {
+          estimatedCost = priceLevel * 15; // $15-60 per meal
+          breakdown.food = (breakdown.food || 0) + estimatedCost;
+        } else if (place.types?.includes('tourist_attraction') || place.types?.includes('museum')) {
+          estimatedCost = priceLevel * 10; // $10-40 for attractions
+          breakdown.attractions = (breakdown.attractions || 0) + estimatedCost;
+        } else if (place.types?.includes('bar') || place.types?.includes('night_club')) {
+          estimatedCost = priceLevel * 12; // $12-48 for drinks
+          breakdown.entertainment = (breakdown.entertainment || 0) + estimatedCost;
+        } else {
+          estimatedCost = priceLevel * 8; // General estimate
+          breakdown.other = (breakdown.other || 0) + estimatedCost;
+        }
+        
+        totalCost += estimatedCost;
+      });
+      
+      // Add transportation estimate (rough estimate based on distance)
+      const transportCost = Math.min(50, places.length * 5);
+      breakdown.transportation = transportCost;
+      totalCost += transportCost;
+      
+      return {
+        total: Math.round(totalCost),
+        breakdown: breakdown
+      };
+    }
+    
     async function saveItinerary() {
       const feedback = document.getElementById('action-feedback');
       const tripName = prompt('Enter a name for your trip:', `Trip ${new Date().toLocaleDateString()}`);
@@ -1017,20 +1145,50 @@
       feedback.textContent = '🔄 Saving itinerary...';
       
       try {
+        // Get current budget from the UI if available, otherwise calculate
+        let currentBudget;
+        
+        // Try to get budget from the page's budget estimate data
+        if (window.pageBudgetEstimate && (window.pageBudgetEstimate.total || window.pageBudgetEstimate.breakdown)) {
+          // Use existing budget data and validate it
+          currentBudget = validateAndCleanBudget(window.pageBudgetEstimate);
+        } else {
+          // Calculate fresh budget estimate
+          currentBudget = calculateBudgetEstimate(placesData);
+        }
+        
+        // Always validate the budget before saving
+        currentBudget = validateAndCleanBudget(currentBudget);
+        
+        // Prepare trip data
+        const tripData = {
+          name: tripName,
+          places: placesData,
+          city: extractCityFromPlaces(placesData),
+          total_distance: directionsData?.routes?.[0]?.distanceMeters || 0,
+          total_duration: directionsData?.routes?.[0]?.duration ? 
+            (typeof directionsData.routes[0].duration === 'string' ? 
+              parseInt(directionsData.routes[0].duration.replace('s', '')) : 
+              directionsData.routes[0].duration) : 0,
+          budget_estimate: currentBudget,
+          polyline: directionsData?.routes?.[0]?.polyline?.encodedPolyline || '',
+          gpt_prompt: window.lastGptPrompt || '',
+          interests: window.currentInterests || [],
+          route_info: {
+            distance: directionsData?.routes?.[0]?.distanceMeters || 0,
+            duration: directionsData?.routes?.[0]?.duration || 0
+          }
+        };
+        
+        console.log('💾 Saving trip data:', tripData);
+        console.log('🔍 Budget validation result:', currentBudget);
+        
         const response = await fetch('/save-itinerary', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            name: tripName,
-            places: placesData,
-            route_info: {
-              distance: directionsData?.routes?.[0]?.distance || 0,
-              duration: directionsData?.routes?.[0]?.duration || 0
-            },
-            city: placesData[0]?.vicinity?.split(',')[0] || 'Unknown'
-          })
+          body: JSON.stringify(tripData)
         });
         
         if (!response.ok) {
@@ -1039,20 +1197,33 @@
         }
         
         const data = await response.json();
+        console.log('💾 Save response:', data);
         
         if (data.success) {
           feedback.style.color = '#27ae60';
           feedback.textContent = '✅ Itinerary saved successfully!';
+          
+          // Refresh saved trips list if on same page
+          if (typeof loadSavedTrips === 'function') {
+            setTimeout(() => loadSavedTrips(), 1000);
+          }
+          
+          // Notify parent window (index.html) to refresh saved trips
+          if (window.opener && window.opener.loadSavedTrips) {
+            setTimeout(() => {
+              window.opener.loadSavedTrips();
+            }, 1000);
+          }
         } else {
           throw new Error(data.error || 'Failed to save');
         }
       } catch (error) {
         feedback.style.color = '#e74c3c';
         feedback.textContent = `❌ Failed to save itinerary: ${error.message}`;
-        console.error('Save error:', error);
+        console.error('💥 Save error:', error);
       }
       
-      setTimeout(() => feedback.textContent = '', 3000);
+      setTimeout(() => feedback.textContent = '', 5000);
     }
 
     //  Phase 4.7 - Easter Eggs

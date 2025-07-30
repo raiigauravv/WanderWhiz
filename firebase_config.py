@@ -41,9 +41,13 @@ class FirebaseManager:
     def save_itinerary(self, user_id, itinerary_data):
         """Save itinerary to Firestore"""
         try:
+            # Get the trip name from itinerary data
+            trip_name = itinerary_data.get('name', f"Trip {datetime.now().strftime('%m/%d/%Y')}")
+            
             # Create itinerary document
             doc_data = {
                 'user_id': user_id or 'anonymous',
+                'name': trip_name,  # Include the trip name
                 'city': itinerary_data.get('city', 'Unknown'),
                 'places': itinerary_data.get('places', []),
                 'total_distance': itinerary_data.get('total_distance', 0),
@@ -55,12 +59,26 @@ class FirebaseManager:
                 'tags': itinerary_data.get('tags', []),
                 'polyline': itinerary_data.get('polyline', ''),
                 'gpt_prompt': itinerary_data.get('gpt_prompt', ''),
-                'interests': itinerary_data.get('interests', [])
+                'interests': itinerary_data.get('interests', []),
+                'total_places': len(itinerary_data.get('places', [])),
+                'route_info': itinerary_data.get('route_info', {})
             }
             
-            # Save to Firestore
-            doc_ref = self.db.collection('itineraries').add(doc_data)
-            return doc_ref[1].id  # Return document ID
+            # Use a meaningful document ID based on the trip name
+            # Clean the name to make it Firebase-friendly
+            clean_name = ''.join(c for c in trip_name if c.isalnum() or c in (' ', '_', '-')).rstrip()
+            clean_name = clean_name.replace(' ', '_')[:50]  # Limit length
+            
+            # Add timestamp to ensure uniqueness
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            doc_id = f"{clean_name}_{timestamp}"
+            
+            # Save to Firestore with custom document ID
+            doc_ref = self.db.collection('itineraries').document(doc_id)
+            doc_ref.set(doc_data)
+            
+            print(f"🔥 Saved trip '{trip_name}' with ID: {doc_id}")
+            return doc_id  # Return meaningful document ID
             
         except Exception as e:
             print(f"❌ Error saving itinerary: {e}")

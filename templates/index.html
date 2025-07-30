@@ -527,6 +527,11 @@
           name="all_places_json"
           value="{{ places_json if places_json else '[]' }}"
         />
+        <input
+          type="hidden"
+          name="city"
+          value="{{ city }}"
+        />
         <div
           class="places-list"
           style="
@@ -663,14 +668,19 @@
             container.innerHTML = data.itineraries.map(trip => `
               <div class="saved-trip-card" style="background: white; padding: 15px; margin: 10px 0; border-radius: 8px; border: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center;">
                 <div>
-                  <h4 style="margin: 0 0 5px 0; color: #2c3e50;">${trip.city || 'Unknown City'}</h4>
+                  <h4 style="margin: 0 0 5px 0; color: #2c3e50;">${trip.name || trip.city || 'Unnamed Trip'}</h4>
                   <p style="margin: 0; color: #666; font-size: 0.9rem;">
                     📍 ${trip.city} • ${trip.places ? trip.places.length : 0} places • ${new Date(trip.created_at).toLocaleDateString()}
                   </p>
                 </div>
-                <button onclick="loadTrip('${trip.id}')" style="background: #3498db; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer;">
-                  🔄 Load Trip
-                </button>
+                <div style="display: flex; gap: 10px;">
+                  <button onclick="loadTrip('${trip.id}')" style="background: #3498db; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer;">
+                    🔄 Load Trip
+                  </button>
+                  <button onclick="deleteTrip('${trip.id}')" style="background: #e74c3c; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer;">
+                    🗑️ Delete
+                  </button>
+                </div>
               </div>
             `).join('');
           } else {
@@ -700,6 +710,46 @@
           // Reset button state
           const button = event.target;
           button.innerHTML = '🔄 Load Trip';
+          button.disabled = false;
+        }
+      }
+
+      async function deleteTrip(tripId) {
+        try {
+          // Confirm with user
+          const confirmed = confirm('Are you sure you want to delete this trip? This action cannot be undone.');
+          if (!confirmed) return;
+
+          // Show loading state
+          const button = event.target;
+          const originalText = button.innerHTML;
+          button.innerHTML = '⏳ Deleting...';
+          button.disabled = true;
+
+          const response = await fetch(`/delete-itinerary/${tripId}`, {
+            method: 'DELETE'
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            if (data.success) {
+              alert('Trip deleted successfully!');
+              // Refresh the saved trips list
+              loadSavedTrips();
+            } else {
+              throw new Error(data.message || 'Failed to delete trip');
+            }
+          } else {
+            throw new Error('Server error');
+          }
+
+        } catch (error) {
+          console.error('Error deleting trip:', error);
+          alert(`Failed to delete trip: ${error.message}`);
+
+          // Reset button state
+          const button = event.target;
+          button.innerHTML = '🗑️ Delete';
           button.disabled = false;
         }
       }

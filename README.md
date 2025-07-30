@@ -1,23 +1,26 @@
-# WanderWhiz 🌐 - AI-Powered Travel Itinerary Planner
+# 🌟 WanderWhiz - AI-Powered Travel Itinerary Planner
 
-![WanderWhiz Logo](https://img.shields.io/badge/WanderWhiz-AI%20Travel%20Planner-orange?style=for-the-badge&logo=travel)
+<div align="center">
+  <img src="https://img.shields.io/badge/Flask-3.1.1-blue?style=for-the-badge&logo=flask" alt="Flask">
+  <img src="https://img.shields.io/badge/Python-3.8+-green?style=for-the-badge&logo=python" alt="Python">
+  <img src="https://img.shields.io/badge/Firebase-Firestore-orange?style=for-the-badge&logo=firebase" alt="Firebase">
+  <img src="https://img.shields.io/badge/OpenAI-GPT_4-purple?style=for-the-badge&logo=openai" alt="OpenAI">
+  <img src="https://img.shields.io/badge/Google_Maps-API-red?style=for-the-badge&logo=googlemaps" alt="Google Maps">
+</div>
 
-**WanderWhiz** is an intelligent travel itinerary planning application that uses AI and Google Maps integration to create optimized travel routes based on your interests. Built for the Google AI Hackathon, it combines the power of OpenAI's GPT models with Google's comprehensive location data.
+## 🎯 Overview
 
-## 🚀 Features
+WanderWhiz is an intelligent travel planning web application that creates personalized itineraries using AI. Simply describe your travel preferences in natural language, and WanderWhiz will generate a complete itinerary with optimized routes, budget estimates, and interactive maps.
 
-### ✨ Core Features
-- **🧠 AI-Powered Planning**: Uses OpenAI GPT to understand natural language travel requests
-- **🗺️ Smart Route Optimization**: Leverages Google Maps Routes API for optimal travel paths
-- **📍 Real-time Place Data**: Integrates Google Places API for up-to-date location information
-- **💾 Trip Saving**: Firebase integration for persistent trip storage
-- **📱 Responsive Design**: Modern, mobile-friendly interface
-- **🎯 Interest-Based Search**: Finds places based on your specific interests
+### ✨ Key Features
 
-### 🎯 Intelligent Trip Planning
-- **AI-Powered Recommendations**: OpenAI GPT suggests personalized activities based on your interests
-- **Real-time Place Data**: Google Places API provides up-to-date venue information and ratings
-- **Smart Route Optimization**: Efficient travel paths between destinations
+- **� AI-Powered Planning**: Natural language processing with OpenAI GPT-4
+- **🗺️ Smart Routing**: Optimized travel routes using Google Routes API
+- **� Budget Management**: Real-time budget estimation with persistence
+- **� Cloud Storage**: Secure trip saving with Firebase Firestore
+- **📱 Responsive Design**: Works seamlessly on desktop and mobile
+- **📄 PDF Export**: Generate professional itinerary documents
+- **🎨 Interactive Maps**: Rich Google Maps integration with custom markers
 - **Dynamic Budget Estimation**: Cost calculations for transportation and activities
 
 ### 🗺️ Interactive Mapping
@@ -40,11 +43,41 @@
 
 ## 🏗️ System Architecture
 
+### Updated Architecture (July 2025)
 ```
-                           🌐 WanderWhiz Platform
-    ┌─────────────────────────────────────────────────────────────────────┐
-    │                                                                     │
-    │  👤 User Input: "Plan romantic Paris trip with cafes and museums"   │
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Frontend      │    │   Flask API     │    │   External APIs │
+│                 │    │                 │    │                 │
+│ • HTML/CSS/JS   │◄──►│ • Route Handlers│◄──►│ • OpenAI GPT-4  │
+│ • Google Maps   │    │ • Data Processing│    │ • Google Places │
+│ • Interactive UI│    │ • Budget Logic  │    │ • Google Routes │
+│ • Budget Display│    │ • PDF Generation│    │ • Geocoding     │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+                                │
+                                ▼
+                       ┌─────────────────┐
+                       │   Data Storage  │
+                       │                 │
+                       │ • Firebase      │
+                       │   Firestore     │
+                       │ • Budget Data   │
+                       │ • Trip History  │
+                       └─────────────────┘
+```
+
+### Technical Stack Improvements
+
+#### Backend Enhancements
+- **Enhanced Budget System**: Corruption-resistant budget validation
+- **Robust Data Cleaning**: Deep data sanitization for reliability  
+- **Improved Error Handling**: Graceful degradation and recovery
+- **PDF City Names**: Fixed address-to-city extraction for exports
+
+#### Frontend Improvements  
+- **Budget Persistence**: Values maintained across page reloads
+- **Streamlined UI**: Removed unnecessary elements like Clear Trip button
+- **Enhanced Validation**: Frontend budget data validation
+- **Better UX**: Improved loading states and user feedback
     │                               │                                     │
     │                               ▼                                     │
     │  ┌─────────────────────────────────────────────────────────────┐    │
@@ -316,6 +349,38 @@ python test_manual.py
 # Test complete workflow
 python test_complete_workflow.py
 ```
+
+## 🎯 Recent Updates (July 2025)
+
+### 🛠️ Major Bug Fixes & Improvements
+
+#### ✅ Budget System Overhaul
+- **Budget Fluctuation FIXED**: Completely resolved budget values changing on page reload
+- **Data Corruption Prevention**: Enhanced validation prevents undefined/NaN/null values
+- **Persistent Budget Values**: Saved trips maintain exact budget estimates consistently
+- **Robust Validation**: Backend validates and cleans all budget data before storage
+
+#### ✅ PDF Export Improvements  
+- **City Names in PDFs**: Fixed issue where PDFs showed street addresses instead of city names
+- **Better Title Extraction**: Enhanced city name extraction from place data
+- **Professional Formatting**: Improved PDF layout and information presentation
+
+#### ✅ UI/UX Enhancements
+- **Removed Clear Trip Button**: Streamlined interface by removing unnecessary elements
+- **Better Error Handling**: More informative error messages and graceful degradation
+- **Enhanced Loading States**: Improved user feedback during API operations
+
+#### ✅ Code Quality Improvements
+- **Comprehensive Documentation**: Added detailed comments throughout codebase
+- **Data Cleaning**: Enhanced data sanitization and validation functions
+- **Error Recovery**: Better handling of external API failures
+- **Performance Optimization**: Reduced redundant API calls and improved efficiency
+
+### 🔧 Technical Debt Resolution
+- Removed all debugging and test files from repository
+- Enhanced code comments and documentation
+- Improved error handling across all endpoints  
+- Streamlined codebase without changing core functionality
 
 ## 🤝 Contributing
 

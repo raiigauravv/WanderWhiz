@@ -1,23 +1,49 @@
+"""
+WanderWhiz - AI-Powered Travel Itinerary Planner
+=================================================
+
+A Flask web application that creates personalized travel itineraries using:
+- OpenAI GPT for intelligent destination suggestions
+- Google Places API for location data and ratings
+- Google Routes API for optimized travel routing
+- Firebase Firestore for secure trip storage
+- Real-time budget estimation with preservation
+- PDF export functionality with proper city names
+
+Features:
+- AI-powered trip planning based on user interests
+- Interactive Google Maps integration
+- Budget estimation and preservation across reloads
+- Trip saving/loading with Firebase backend
+- PDF export with detailed itineraries
+- Responsive web interface
+
+Author: WanderWhiz Team
+Last Updated: July 30, 2025
+"""
+
+# Core Flask and web framework imports
 from flask import Flask, render_template, request, jsonify, send_file, session
 from dotenv import load_dotenv
-import requests
 import os
 import json
-import openai
-from fpdf import FPDF
 from datetime import datetime
 import uuid
-import random
+
+# External API and service imports
+import requests
+import openai
+
+# PDF generation imports
 from reportlab.lib.pagesizes import letter, A4
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_JUSTIFY
-from reportlab.pdfgen import canvas
 from io import BytesIO
 
-# Firebase integration
+# Firebase integration with graceful fallback
 try:
     from firebase_config import get_firebase_manager
     firebase_enabled = True
@@ -26,28 +52,47 @@ except ImportError as e:
     firebase_enabled = False
     print("⚠️ Firebase not available:", e)
 
+# Load environment variables
 load_dotenv()
 
+# Initialize Flask application
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "your-secret-key-here")
 
+# API Keys configuration
 GOOGLE_MAPS_API_KEY = os.getenv("GOOGLE_MAPS_API_KEY")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
+# =============================================================================
+# DATA CLEANING AND VALIDATION UTILITIES
+# =============================================================================
+
 def deep_clean_data(obj):
-    """Recursively clean data to remove Undefined objects and other non-serializable types"""
+    """
+    Recursively clean data to remove non-serializable objects and prepare for JSON.
+    
+    This function handles:
+    - Undefined objects from various sources
+    - Non-serializable Python objects
+    - Nested dictionaries and lists
+    - Type conversion for safe serialization
+    
+    Args:
+        obj: Any Python object to be cleaned
+        
+    Returns:
+        Cleaned object safe for JSON serialization, or None if object was invalid
+    """
     if obj is None:
         return None
     
-    # Check for Undefined objects by class name or string representation
+    # Handle Undefined objects by class name or string representation
     if hasattr(obj, '__class__') and 'Undefined' in str(obj.__class__):
         print(f"🧹 Removed Undefined object by class: {obj.__class__}")
         return None
     if str(obj) == 'Undefined' or repr(obj) == 'Undefined':
         print(f"🧹 Removed Undefined object by string: {obj}")
         return None
-    
-    # Check for any object that contains 'Undefined' in its string representation
     if 'Undefined' in str(obj):
         print(f"🧹 Removed object containing 'Undefined': {type(obj)} - {str(obj)[:100]}")
         return None
@@ -109,6 +154,124 @@ def deep_clean_data(obj):
             else:
                 print(f"🧹 Converting non-serializable object to string: {type(obj)}")
                 return obj_str
+
+
+def clean_budget_data(budget_data):
+    """
+    Clean and validate budget data to ensure consistent structure and valid values.
+    
+    This function handles both nested and flat budget structures:
+    - Nested: {breakdown: {transportation: 25, food: 45}, total: 105}
+    - Flat: {transportation: 25, food: 45, total: 105}
+    
+    It also validates and sanitizes all numeric values to prevent corruption
+    from undefined, NaN, or invalid values that could cause frontend issues.
+    
+    Args:
+        budget_data (dict): Raw budget data from various sources
+        
+    Returns:
+        dict: Clean budget data in flat structure with validated numeric values
+    """
+    if not isinstance(budget_data, dict):
+        return {
+            'transportation': 0,
+            'food': 0,
+            'activities': 0,
+            'miscellaneous': 0,
+            'total': 0
+        }
+    
+    def safe_budget_value(value, default=0):
+        """
+        Safely convert any value to a valid budget number.
+        
+        Handles common corruption cases:
+        - 'undefined', 'NaN', 'null' strings
+        - Python None, NaN, inf values
+        - Invalid numeric strings
+        
+        Args:
+            value: Any value that should represent a budget amount
+            default (int): Default value if conversion fails
+            
+        Returns:
+            int: Valid non-negative integer budget amount
+        """
+        if value is None:
+            return default
+        if isinstance(value, (int, float)):
+            if str(value).lower() in ['nan', 'inf', '-inf'] or value != value:  # Check for NaN
+                return default
+            return max(0, int(value))
+        if isinstance(value, str):
+            if value.lower() in ['nan', 'undefined', 'null', 'none', '']:
+                return default
+            try:
+                parsed = float(value)
+                if parsed != parsed or parsed == float('inf') or parsed == float('-inf'):
+                    return default
+                return max(0, int(parsed))
+            except (ValueError, TypeError):
+                return default
+        return default
+    
+    # Initialize values
+    transportation = 0
+    food = 0
+    activities = 0
+    miscellaneous = 0
+    total = 0
+    
+    # Handle nested breakdown structure (what's actually saved)
+    breakdown = budget_data.get('breakdown', {})
+    if breakdown and isinstance(breakdown, dict):
+        transportation = safe_budget_value(breakdown.get('transportation'))
+        food = safe_budget_value(breakdown.get('food'))
+        # activities might be stored as 'activities' or 'attractions'
+        activities = safe_budget_value(breakdown.get('activities', breakdown.get('attractions', 0)))
+        # miscellaneous might be stored as various keys
+        misc_from_breakdown = (
+            safe_budget_value(breakdown.get('other', 0)) +
+            safe_budget_value(breakdown.get('entertainment', 0)) +
+            safe_budget_value(breakdown.get('accommodation', 0))
+        )
+        miscellaneous = misc_from_breakdown
+    else:
+        # Handle flat structure (if it exists)
+        transportation = safe_budget_value(budget_data.get('transportation'))
+        food = safe_budget_value(budget_data.get('food'))
+        activities = safe_budget_value(budget_data.get('activities'))
+        miscellaneous = safe_budget_value(budget_data.get('miscellaneous'))
+    
+    # Add any top-level miscellaneous value
+    miscellaneous += safe_budget_value(budget_data.get('miscellaneous'))
+    
+    # Get the saved total
+    saved_total = safe_budget_value(budget_data.get('total'))
+    
+    # Calculate what the total should be
+    calculated_total = transportation + food + activities + miscellaneous
+    
+    # Use saved total if it's valid and reasonable, otherwise use calculated
+    if saved_total > 0 and abs(saved_total - calculated_total) <= calculated_total * 0.5:  # Allow 50% variance
+        total = saved_total
+        print(f"✅ Using preserved total: ${total}")
+    else:
+        total = calculated_total
+        if saved_total > 0:
+            print(f"🔄 Recalculated total from ${saved_total} to ${total}")
+    
+    result = {
+        'transportation': transportation,
+        'food': food,
+        'activities': activities,
+        'miscellaneous': miscellaneous,
+        'total': total
+    }
+    
+    print(f"🏦 Budget processed: {result}")
+    return result
 
 
 def clean_place_data(places):
@@ -415,10 +578,24 @@ def get_route_directions(places):
         print(f"Error getting route directions: {e}")
         return None
 
+
+# =============================================================================
+# MAIN APPLICATION ROUTES
+# =============================================================================
+
 @app.route("/", methods=["GET", "POST"])
 def index():
+    """
+    Main application route that handles the landing page and basic place searches.
+    
+    GET: Renders the main page with default values
+    POST: Processes city/interest form submissions and fetches places
+    
+    Returns:
+        Rendered template with places data and map configuration
+    """
     places = []
-    lat = 43.65107  # Default: Toronto
+    lat = 43.65107  # Default: Toronto coordinates
     lng = -79.347015
     city = ""  # Default values for GET requests
     interest = ""
@@ -575,9 +752,24 @@ def index():
                          interest=interest)
 
 
+# =============================================================================
+# AI-POWERED TRAVEL PLANNING ROUTES
+# =============================================================================
+
 @app.route("/gpt-assist", methods=["POST"])
 def gpt_assist():
-    """AI-powered travel planning using GPT"""
+    """
+    AI-powered travel planning using OpenAI GPT.
+    
+    Processes natural language travel requests and extracts:
+    - Destination city
+    - Travel interests/preferences
+    - Finds relevant places using Google Places API
+    - Returns structured data for itinerary building
+    
+    Returns:
+        JSON response with places data and extracted preferences
+    """
     user_prompt = request.form["prompt"]
     print(f"🧠 GPT User prompt: {user_prompt}")
     
@@ -743,8 +935,10 @@ def itinerary():
     """Build an optimized itinerary from selected places"""
     selected_ids = request.form.getlist("place_ids")
     all_places_json = request.form.get("all_places_json")
+    city_name = request.form.get("city", "")  # Get city from form data
     
     print(f"🎯 Selected place IDs: {selected_ids}")
+    print(f"🏙️ City from form: {city_name}")
     
     if not all_places_json:
         return "Error: No places data available", 400
@@ -1023,8 +1217,8 @@ def itinerary():
         budget_estimate = estimate_budget(ordered_places)
         budget_estimate = deep_clean_data(budget_estimate)  # Clean budget data too
         
-        # Extract basic info for context
-        city = ordered_places[0].get('vicinity', 'Unknown').split(',')[0] if ordered_places else 'Unknown'
+        # Extract basic info for context - use city from form data if available
+        city = city_name if city_name else (ordered_places[0].get('vicinity', 'Unknown').split(',')[0] if ordered_places else 'Unknown')
         total_distance = directions['routes'][0]['distance'] if directions and directions.get('routes') else 0
         total_duration = directions['routes'][0]['duration'] if directions and directions.get('routes') else 0
 
@@ -1093,6 +1287,7 @@ def export_pdf():
         data = request.get_json()
         places = data.get('places', [])
         route_info = data.get('route_info', {})
+        city = data.get('city', 'Unknown')  # Get city from request data
         
         # Enhance places with addresses and budget estimation
         enhanced_places = []
@@ -1118,8 +1313,8 @@ def export_pdf():
         # Calculate budget
         budget_info = estimate_budget(enhanced_places)
         
-        # Create PDF with ReportLab
-        filename = f"WanderWhiz_Itinerary_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+        # Create PDF with ReportLab - include city name in filename
+        filename = f"WanderWhiz_{city}_Itinerary_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
         filepath = filename
         
         # Create the PDF document
@@ -1183,7 +1378,7 @@ def export_pdf():
         story = []
         
         # Header section with gradient-like effect
-        story.append(Paragraph("🌟 WanderWhiz Travel Itinerary 🌟", title_style))
+        story.append(Paragraph(f"🌟 WanderWhiz Travel Itinerary - {city} 🌟", title_style))
         story.append(Paragraph(f"Generated on {datetime.now().strftime('%B %d, %Y at %I:%M %p')}", subtitle_style))
         story.append(Spacer(1, 20))
         
@@ -1366,10 +1561,25 @@ def generate_maps_link():
         return jsonify({"error": str(e)}), 500
 
 
-# 🗺️ Phase 4.5 - Save Itineraries (Session Storage)
+# =============================================================================
+# TRIP PERSISTENCE AND STORAGE ROUTES
+# =============================================================================
+
 @app.route("/save-itinerary", methods=["POST"])
 def save_itinerary():
-    """Save itinerary to Firebase or session storage"""
+    """
+    Save travel itinerary to Firebase with comprehensive data validation.
+    
+    Handles:
+    - Trip metadata (name, dates, user info)
+    - Places data with geocoding
+    - Budget estimates with validation
+    - Route information and polylines
+    - Data cleaning and corruption prevention
+    
+    Returns:
+        JSON response with success status and trip ID
+    """
     try:
         data = request.get_json()
         itinerary = {
@@ -1483,62 +1693,189 @@ def load_itinerary(itinerary_id):
 def view_saved_trip(itinerary_id):
     """Display a saved trip on the itinerary page"""
     try:
-        saved_trips = session.get('saved_trips', [])
+        trip = None
         
-        # Find the itinerary
-        for trip in saved_trips:
-            if trip['id'] == itinerary_id:
-                # Get route directions for the saved places
-                places = trip['places']
-                directions = None
-                
-                if len(places) >= 2:
-                    # Get fresh directions for the saved places
-                    directions = get_route_directions(places)
-                
-                # Calculate budget estimate if not present
-                budget_estimate = trip.get('budget_estimate', {})
-                if not budget_estimate or not budget_estimate.get('total'):
-                    budget_estimate = estimate_budget(places)
-                
-                # Calculate distance and duration from directions
-                total_distance = trip.get('total_distance', 0)
-                total_duration = trip.get('total_duration', 0)
-                
-                if directions and 'routes' in directions and directions['routes']:
-                    route = directions['routes'][0]
-                    if 'distanceMeters' in route:
-                        total_distance = route['distanceMeters']
-                    if 'duration' in route:
-                        total_duration = int(route['duration'].rstrip('s'))
-                
-                # Clean all data before passing to template
-                template_data = {
-                    'places': places,
-                    'directions': directions,
-                    'polyline': directions.get('routes', [{}])[0].get('polyline', {}).get('encodedPolyline', '') if directions else '',
-                    'total_distance': total_distance,
-                    'total_duration': total_duration,
-                    'budget_estimate': budget_estimate,
-                    'city': trip.get('city', ''),
-                    'route_summary': f"Saved trip with {len(places)} places",
-                    'api_key': GOOGLE_MAPS_API_KEY,
-                    'saved_trip_name': trip['name']
-                }
-                template_data = deep_clean_data(template_data)
-                
-                return render_template('itinerary.html', **template_data)
+        # Try Firebase first if enabled
+        if firebase_enabled:
+            try:
+                firebase_manager = get_firebase_manager()
+                trip = firebase_manager.get_itinerary_by_id(itinerary_id)
+                if trip:
+                    print(f"🔥 Loaded trip from Firebase: {trip.get('name', 'Unnamed')}")
+            except Exception as e:
+                print(f"🔥 Firebase load failed: {e}")
         
-        # If trip not found, redirect to homepage with error
-        return render_template('index.html', 
-                             api_key=GOOGLE_MAPS_API_KEY,
-                             error=f"Saved trip '{itinerary_id}' not found")
+        # Fallback to session storage if Firebase failed or trip not found
+        if not trip:
+            saved_trips = session.get('saved_trips', [])
+            for session_trip in saved_trips:
+                if session_trip['id'] == itinerary_id:
+                    trip = session_trip
+                    print(f"📁 Loaded trip from session: {trip.get('name', 'Unnamed')}")
+                    break
+        
+        if not trip:
+            return render_template('itinerary.html', 
+                                 error="Trip not found")
+        
+        # Get route directions for the saved places
+        places = trip['places']
+        directions = None
+        
+        if len(places) >= 2:
+            # Get fresh directions for the saved places
+            directions = get_route_directions(places)
+        
+        # Preserve saved budget data - only recalculate if truly corrupted
+        budget_estimate = trip.get('budget_estimate', {})
+        
+        # Check if budget data is valid and complete
+        has_valid_total = (budget_estimate.get('total') is not None and 
+                          isinstance(budget_estimate.get('total'), (int, float)) and 
+                          budget_estimate.get('total') > 0)
+        
+        has_valid_breakdown = (budget_estimate.get('breakdown') is not None and
+                              isinstance(budget_estimate.get('breakdown'), dict) and
+                              len(budget_estimate.get('breakdown', {})) > 0)
+        
+        # Only recalculate if budget is completely missing or corrupted
+        if not has_valid_total or not has_valid_breakdown:
+            print("🔄 Budget data missing or corrupted - recalculating...")
+            budget_estimate = estimate_budget(places)
+        else:
+            print("✅ Using saved budget data (preserving original prices)")
+            # Clean the existing budget data without recalculating
+            budget_estimate = clean_budget_data(budget_estimate)
+        
+        # Calculate distance and duration from directions
+        total_distance = trip.get('total_distance', 0)
+        total_duration = trip.get('total_duration', 0)
+        
+        if directions and 'routes' in directions and directions['routes']:
+            route = directions['routes'][0]
+            if 'distanceMeters' in route:
+                total_distance = route['distanceMeters']
+            if 'duration' in route:
+                duration_value = route['duration']
+                if isinstance(duration_value, str):
+                    total_duration = int(duration_value.rstrip('s'))
+                elif isinstance(duration_value, (int, float)):
+                    total_duration = int(duration_value)
+                else:
+                    total_duration = 0
+        
+        # Extract city name from saved trip or places
+        city = trip.get('city', '')
+        
+        # If city is empty or looks like an address, extract city from place data
+        if not city or ',' in city or any(char.isdigit() for char in city):
+            print("🏙️ Extracting city from place data...")
+            if places:
+                # Try to extract city from the first place's vicinity or formatted_address
+                first_place = places[0]
+                vicinity = first_place.get('vicinity', '')
+                formatted_address = first_place.get('formatted_address', '')
+                
+                # Extract city from vicinity (usually "Area, City" format)
+                if vicinity and ',' in vicinity:
+                    city = vicinity.split(',')[-1].strip()
+                # Extract from formatted address (get the major city component)
+                elif formatted_address:
+                    # Try to find a major city name in the address
+                    parts = formatted_address.split(',')
+                    for part in reversed(parts):
+                        part = part.strip()
+                        # Skip country codes, postal codes, and numbers
+                        if (len(part) > 2 and 
+                            not part.isdigit() and 
+                            not part.upper() in ['CA', 'US', 'UK', 'FR', 'DE', 'JP', 'AU', 'IN'] and
+                            not any(char.isdigit() for char in part)):
+                            city = part
+                            break
+                else:
+                    city = 'Unknown'
+            
+            print(f"🏙️ Extracted city: {city}")
+        
+        print(f"🏙️ Final city for template: {city}")
+        
+        # Clean all data before passing to template
+        template_data = {
+            'places': places,
+            'directions': directions,
+            'polyline': directions.get('routes', [{}])[0].get('polyline', {}).get('encodedPolyline', '') if directions else '',
+            'total_distance': total_distance,
+            'total_duration': total_duration,
+            'budget_estimate': budget_estimate,
+            'city': city,  # Use the cleaned city name
+            'route_summary': f"Saved trip with {len(places)} places",
+            'api_key': GOOGLE_MAPS_API_KEY,
+            'saved_trip_name': trip['name']
+        }
+        
+        print(f"🔍 DEBUG: Budget estimate being passed to template: {budget_estimate}")
+        print(f"🔍 DEBUG: Template data keys: {list(template_data.keys())}")
+        
+        # Clean data but preserve budget_estimate 
+        preserved_budget = template_data.get('budget_estimate')
+        template_data = deep_clean_data(template_data)
+        
+        # Restore budget estimate if it was cleaned out
+        if template_data.get('budget_estimate') is None and preserved_budget:
+            print(f"🔧 Restoring cleaned budget estimate: {preserved_budget}")
+            template_data['budget_estimate'] = preserved_budget
+        
+        return render_template('itinerary.html', **template_data)
         
     except Exception as e:
         print(f"💥 View Saved Trip Error: {e}")
         return render_template('index.html', 
                              api_key=GOOGLE_MAPS_API_KEY,
                              error=f"Error loading saved trip: {str(e)}")
+
+
+@app.route("/delete-itinerary/<itinerary_id>", methods=["DELETE"])
+def delete_itinerary(itinerary_id):
+    """Delete a saved trip"""
+    try:
+        # Try Firebase first if enabled
+        if firebase_enabled:
+            try:
+                firebase_manager = get_firebase_manager()
+                success = firebase_manager.delete_itinerary(itinerary_id)
+                if success:
+                    return jsonify({
+                        "success": True,
+                        "message": "Trip deleted from Firebase successfully!",
+                        "storage": "firebase"
+                    })
+            except Exception as e:
+                print(f"🔥 Firebase delete failed: {e}")
+        
+        # Fallback to session storage
+        saved_trips = session.get('saved_trips', [])
+        original_count = len(saved_trips)
+        
+        # Filter out the trip to delete
+        saved_trips = [trip for trip in saved_trips if trip.get('id') != itinerary_id]
+        session['saved_trips'] = saved_trips
+        session.modified = True
+        
+        if len(saved_trips) < original_count:
+            return jsonify({
+                "success": True,
+                "message": "Trip deleted from session successfully!",
+                "storage": "session"
+            })
+        else:
+            return jsonify({
+                "success": False,
+                "message": "Trip not found"
+            }), 404
+            
+    except Exception as e:
+        print(f"💥 Delete Error: {e}")
+        return jsonify({"error": str(e)}), 500
 
 
 @app.route("/ask", methods=["POST"])
