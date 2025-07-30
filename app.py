@@ -3324,8 +3324,8 @@ def get_consensus_level(vote_counts, total_votes):
 
 # Main application runner
 if __name__ == "__main__":
-    # Get port from environment variable or default to 5002 for local development
-    port = int(os.getenv("PORT", 5002))
+    # Get port from environment variable or default to 5003 for local development
+    port = int(os.getenv("PORT", 5003))
     print(f"🚀 Starting WanderWhiz on port {port}")
     print("🤝 Collaborative features available!")
     app.run(debug=False, port=port, host='0.0.0.0')
