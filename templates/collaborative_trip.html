@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🤝 Collaborative Trip - {{ trip_data.trip_data.destination or 'WanderWhiz' }}</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: '                                <div class="add-comment">
+                                    <input type="text" class="comment-input" placeholder="Add a comment..." 
+                                           id="comment-input-{{ place.place_id or loop.index }}"
+                                           onkeypress="handleCommentKeyPress(event, '{{ place.place_id or loop.index }}')">
+                                    <button class="submit-comment" onclick="addComment('{{ place.place_id or loop.index }}')">
+                                        <i class="fas fa-paper-plane"></i>
+                                    </button>
+                                </div>I', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .header h1 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+
+        .header .trip-info {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .info-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #7f8c8d;
+        }
+
+        .participants-bar {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .participants-list {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .participant {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #f8f9fa;
+            padding: 8px 15px;
+            border-radius: 25px;
+            border: 2px solid transparent;
+        }
+
+        .participant.owner {
+            background: linear-gradient(135deg, #3498db, #2ecc71);
+            color: white;
+        }
+
+        .participant.online {
+            border-color: #2ecc71;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .places-section {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .place-card {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-left: 4px solid #3498db;
+            transition: all 0.3s ease;
+        }
+
+        .place-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .place-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 15px;
+        }
+
+        .place-title {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+
+        .place-rating {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            color: #f39c12;
+        }
+
+        .voting-section {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-top: 15px;
+        }
+
+        .vote-btn {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: all 0.3s ease;
+        }
+
+        .vote-btn.love {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .vote-btn.like {
+            background: #2ecc71;
+            color: white;
+        }
+
+        .vote-btn.dislike {
+            background: #95a5a6;
+            color: white;
+        }
+
+        .vote-btn:hover {
+            transform: scale(1.05);
+        }
+
+        .vote-count {
+            background: #ecf0f1;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            color: #7f8c8d;
+        }
+
+        .comments-section {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #ecf0f1;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .comment {
+            background: linear-gradient(135deg, #ffffff, #f8f9fa);
+            padding: 12px 16px;
+            border-radius: 12px;
+            margin-bottom: 10px;
+            border-left: 3px solid #3498db;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            transition: all 0.2s ease;
+        }
+
+        .comment:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .comment-author {
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+
+        .comment-text {
+            color: #34495e;
+            line-height: 1.4;
+            font-size: 14px;
+            margin: 0;
+        }
+
+        .add-comment {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            padding-top: 10px;
+        }
+
+        .comment-input {
+            flex: 1;
+            padding: 10px 15px;
+            border: 2px solid #ecf0f1;
+            border-radius: 25px;
+            outline: none;
+            font-size: 14px;
+            background: rgba(255, 255, 255, 0.9);
+            transition: all 0.2s ease;
+        }
+
+        .comment-input:focus {
+            border-color: #3498db;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+
+        .submit-comment {
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .submit-comment:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+        }
+
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .card h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .activity-feed {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .activity-item {
+            padding: 10px;
+            border-left: 3px solid #3498db;
+            background: #f8f9fa;
+            border-radius: 0 8px 8px 0;
+            margin-bottom: 10px;
+        }
+
+        .activity-time {
+            font-size: 11px;
+            color: #7f8c8d;
+        }
+
+        .share-section {
+            text-align: center;
+        }
+
+        .share-code {
+            background: #2c3e50;
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            font-family: monospace;
+            font-size: 1.5em;
+            margin: 15px 0;
+            letter-spacing: 3px;
+        }
+
+        .share-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 15px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: #3498db;
+            color: white;
+        }
+
+        .btn-success {
+            background: #2ecc71;
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .join-form {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 20px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .join-input {
+            padding: 12px 20px;
+            border: 2px solid #ecf0f1;
+            border-radius: 25px;
+            margin: 10px;
+            outline: none;
+            font-size: 16px;
+        }
+
+        .join-input:focus {
+            border-color: #3498db;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .participants-list {
+                justify-content: center;
+            }
+            
+            .header .trip-info {
+                flex-direction: column;
+                gap: 10px;
+            }
+        }
+
+        .live-indicator {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #2ecc71;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 25px;
+            font-size: 12px;
+            z-index: 1000;
+        }
+
+        .live-indicator.connecting {
+            background: #f39c12;
+        }
+
+        .live-indicator.offline {
+            background: #e74c3c;
+        }
+    </style>
+</head>
+<body>
+    <div class="live-indicator" id="liveStatus">
+        <i class="fas fa-circle"></i> Live
+    </div>
+
+    <div class="container">
+        <!-- Join Form (shown if not joined) -->
+        <div class="join-form" id="joinForm">
+            <h2><i class="fas fa-users"></i> Join Collaborative Trip</h2>
+            <p>Enter your name to join this collaborative trip planning session</p>
+            <input type="text" id="participantName" class="join-input" placeholder="Your name" maxlength="20">
+            <br>
+            <button onclick="joinTrip()" class="btn btn-primary">
+                <i class="fas fa-sign-in-alt"></i> Join Trip
+            </button>
+        </div>
+
+        <!-- Main Trip Content (hidden until joined) -->
+        <div id="tripContent" style="display: none;">
+            <div class="header">
+                <h1><i class="fas fa-map-marked-alt"></i> {{ trip_data.trip_data.destination or 'Collaborative Trip' }}</h1>
+                <p>{{ trip_data.trip_data.description or 'Plan your trip together!' }}</p>
+                <div class="trip-info">
+                    <div class="info-item">
+                        <i class="fas fa-calendar"></i>
+                        <span>Created {{ trip_data.created_at[:10] if trip_data.created_at else 'Recently' }}</span>
+                    </div>
+                    <div class="info-item">
+                        <i class="fas fa-user"></i>
+                        <span>By {{ trip_data.creator }}</span>
+                    </div>
+                    <div class="info-item">
+                        <i class="fas fa-users"></i>
+                        <span id="participantCount">{{ trip_data.participants|length if trip_data.participants else 0 }} participants</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="participants-bar">
+                <h3><i class="fas fa-users"></i> Participants</h3>
+                <div class="participants-list" id="participantsList">
+                    {% for participant_id, participant in trip_data.participants.items() %}
+                    <div class="participant {{ 'owner' if participant.role == 'owner' else '' }}">
+                        <i class="fas fa-user"></i>
+                        <span>{{ participant.name }}</span>
+                        {% if participant.role == 'owner' %}
+                        <i class="fas fa-crown" title="Trip Owner"></i>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="main-content">
+                <div class="places-section">
+                    <h3><i class="fas fa-map-pin"></i> Places to Visit</h3>
+                    <div id="placesList">
+                        {% if trip_data.trip_data.places %}
+                        {% for place in trip_data.trip_data.places %}
+                        <div class="place-card" data-place-id="{{ place.place_id or loop.index }}">
+                            <div class="place-header">
+                                <div>
+                                    <div class="place-title">{{ place.name }}</div>
+                                    <div class="place-rating">
+                                        {% for i in range(5) %}
+                                        <i class="fas fa-star {{ 'active' if i < place.rating else '' }}"></i>
+                                        {% endfor %}
+                                        <span>{{ place.rating or 'N/A' }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <p>{{ place.vicinity or place.address or 'Location details not available' }}</p>
+                            
+                            <div class="voting-section">
+                                <button class="vote-btn love" onclick="votePlace('{{ place.place_id or loop.index }}', 'love')">
+                                    <i class="fas fa-heart"></i> Love
+                                </button>
+                                <button class="vote-btn like" onclick="votePlace('{{ place.place_id or loop.index }}', 'like')">
+                                    <i class="fas fa-thumbs-up"></i> Like
+                                </button>
+                                <button class="vote-btn dislike" onclick="votePlace('{{ place.place_id or loop.index }}', 'dislike')">
+                                    <i class="fas fa-thumbs-down"></i> Pass
+                                </button>
+                                
+                                <div class="vote-count" id="votes-{{ place.place_id or loop.index }}">
+                                    <i class="fas fa-poll"></i> 0 votes
+                                </div>
+                            </div>
+
+                            <div class="comments-section">
+                                <div class="comments-list" id="comments-{{ place.place_id or loop.index }}">
+                                    <!-- Comments loaded dynamically -->
+                                </div>
+                                <div class="add-comment">
+                                    <input type="text" class="comment-input" placeholder="Add a comment..." 
+                                           id="comment-input-{{ place.place_id or loop.index }}">
+                                    <button class="submit-comment" onclick="addComment('{{ place.place_id or loop.index }}')">
+                                        <i class="fas fa-paper-plane"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                        {% else %}
+                        <p>No places added yet. Start planning your trip!</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="sidebar">
+                    <div class="card share-section">
+                        <h3><i class="fas fa-share"></i> Share Trip</h3>
+                        <p>Share this code with friends:</p>
+                        <div class="share-code">{{ share_code }}</div>
+                        <div class="share-actions">
+                            <button class="btn btn-primary" onclick="copyShareCode()">
+                                <i class="fas fa-copy"></i> Copy Code
+                            </button>
+                            <button class="btn btn-success" onclick="shareLink()">
+                                <i class="fas fa-link"></i> Share Link
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h3><i class="fas fa-bell"></i> Recent Activity</h3>
+                        <div class="activity-feed" id="activityFeed">
+                            {% if trip_data.notifications %}
+                            {% for notification_id, notification in trip_data.notifications.items() %}
+                            <div class="activity-item">
+                                <strong>{{ notification.user }}</strong> {{ notification.action }}
+                                <div class="activity-time">{{ notification.timestamp[:19] if notification.timestamp else 'Just now' }}</div>
+                            </div>
+                            {% endfor %}
+                            {% else %}
+                            <div class="activity-item">
+                                Trip created by {{ trip_data.creator }}
+                                <div class="activity-time">{{ trip_data.created_at[:19] if trip_data.created_at else 'Recently' }}</div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const TRIP_ID = '{{ trip_id }}';
+        const SHARE_CODE = '{{ share_code }}';
+        let PARTICIPANT_NAME = '';
+        let pollInterval;
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if already joined
+            const savedName = localStorage.getItem(`participant_${SHARE_CODE}`);
+            if (savedName) {
+                PARTICIPANT_NAME = savedName;
+                document.getElementById('participantName').value = savedName;
+                joinTrip();
+            }
+        });
+
+        function joinTrip() {
+            const nameInput = document.getElementById('participantName');
+            const name = nameInput.value.trim();
+            
+            if (!name) {
+                alert('Please enter your name');
+                return;
+            }
+
+            PARTICIPANT_NAME = name;
+            
+            // Save to localStorage
+            localStorage.setItem(`participant_${SHARE_CODE}`, name);
+            
+            // Join trip via API
+            fetch('/api/join-trip', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    share_code: SHARE_CODE,
+                    participant_name: name
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Hide join form, show trip content
+                    document.getElementById('joinForm').style.display = 'none';
+                    document.getElementById('tripContent').style.display = 'block';
+                    
+                    // Start real-time updates
+                    startRealTimeUpdates();
+                    
+                    // Load initial data
+                    loadTripData();
+                } else {
+                    alert(data.error || 'Failed to join trip');
+                }
+            })
+            .catch(error => {
+                console.error('Error joining trip:', error);
+                alert('Error joining trip. Please try again.');
+            });
+        }
+
+        function startRealTimeUpdates() {
+            // Poll for updates every 3 seconds
+            pollInterval = setInterval(loadTripData, 3000);
+            
+            // Update live status
+            document.getElementById('liveStatus').innerHTML = '<i class="fas fa-circle"></i> Live';
+            document.getElementById('liveStatus').className = 'live-indicator';
+        }
+
+        function loadTripData() {
+            fetch(`/api/collaborative-trip/${TRIP_ID}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    updateParticipants(data.trip_data.participants);
+                    updateVotes(data.trip_data.votes);
+                    updateComments(data.trip_data.comments);
+                    updateActivity(data.trip_data.notifications);
+                }
+            })
+            .catch(error => {
+                console.error('Error loading trip data:', error);
+                document.getElementById('liveStatus').innerHTML = '<i class="fas fa-circle"></i> Offline';
+                document.getElementById('liveStatus').className = 'live-indicator offline';
+            });
+        }
+
+        function updateParticipants(participants) {
+            const list = document.getElementById('participantsList');
+            const count = document.getElementById('participantCount');
+            
+            if (participants) {
+                count.textContent = `${Object.keys(participants).length} participants`;
+                
+                list.innerHTML = '';
+                Object.values(participants).forEach(participant => {
+                    const div = document.createElement('div');
+                    div.className = `participant ${participant.role === 'owner' ? 'owner' : ''}`;
+                    div.innerHTML = `
+                        <i class="fas fa-user"></i>
+                        <span>${participant.name}</span>
+                        ${participant.role === 'owner' ? '<i class="fas fa-crown" title="Trip Owner"></i>' : ''}
+                    `;
+                    list.appendChild(div);
+                });
+            }
+        }
+
+        function updateVotes(votes) {
+            if (!votes) return;
+            
+            Object.keys(votes).forEach(placeId => {
+                const voteData = votes[placeId];
+                const summary = voteData.summary || {total: 0, likes: 0, loves: 0};
+                
+                const voteElement = document.getElementById(`votes-${placeId}`);
+                if (voteElement) {
+                    voteElement.innerHTML = `
+                        <i class="fas fa-poll"></i> 
+                        ${summary.total} votes 
+                        (❤️${summary.loves} 👍${summary.likes})
+                    `;
+                }
+            });
+        }
+
+        function updateComments(comments) {
+            if (!comments) return;
+            
+            Object.keys(comments).forEach(placeId => {
+                const placeComments = comments[placeId];
+                const commentsElement = document.getElementById(`comments-${placeId}`);
+                
+                if (commentsElement) {
+                    if (!placeComments || Object.keys(placeComments).length === 0) {
+                        // Show empty state
+                        commentsElement.innerHTML = `
+                            <div style="text-align: center; padding: 15px; color: #95a5a6; font-style: italic; font-size: 13px;">
+                                <i class="fas fa-comment-slash" style="margin-right: 8px;"></i>
+                                No comments yet. Be the first to share your thoughts!
+                            </div>
+                        `;
+                    } else {
+                        commentsElement.innerHTML = '';
+                        
+                        // Sort comments by timestamp (newest first)
+                        const sortedComments = Object.values(placeComments)
+                            .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                        
+                        sortedComments.forEach(comment => {
+                            const div = document.createElement('div');
+                            div.className = 'comment';
+                            
+                            // Format timestamp for better readability
+                            const commentTime = comment.timestamp ? 
+                                new Date(comment.timestamp).toLocaleString('en-US', {
+                                    month: 'short',
+                                    day: 'numeric',
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                }) : 'Just now';
+                            
+                            div.innerHTML = `
+                                <div class="comment-author">
+                                    <i class="fas fa-user-circle" style="margin-right: 6px; color: #3498db;"></i>
+                                    ${comment.user}
+                                    <span style="font-size: 0.8em; color: #95a5a6; font-weight: normal; margin-left: 8px;">
+                                        ${commentTime}
+                                    </span>
+                                </div>
+                                <div class="comment-text">${comment.comment}</div>
+                            `;
+                            commentsElement.appendChild(div);
+                        });
+                    }
+                }
+            });
+        }
+
+        // Handle Enter key press for comment submission
+        function handleCommentKeyPress(event, placeId) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                addComment(placeId);
+            }
+        }
+
+        function updateActivity(notifications) {
+            const feed = document.getElementById('activityFeed');
+            if (notifications && feed) {
+                feed.innerHTML = '';
+                
+                const sortedNotifications = Object.values(notifications)
+                    .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+                    .slice(0, 10);
+                
+                sortedNotifications.forEach(notification => {
+                    const div = document.createElement('div');
+                    div.className = 'activity-item';
+                    div.innerHTML = `
+                        <strong>${notification.user}</strong> ${notification.action}
+                        <div class="activity-time">${notification.timestamp ? notification.timestamp.slice(0, 19) : 'Just now'}</div>
+                    `;
+                    feed.appendChild(div);
+                });
+            }
+        }
+
+        function votePlace(placeId, vote) {
+            fetch('/api/vote-place', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    trip_id: TRIP_ID,
+                    place_id: placeId,
+                    vote: vote,
+                    user_name: PARTICIPANT_NAME
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Update will come through real-time polling
+                    console.log('Vote recorded');
+                } else {
+                    alert(data.error || 'Failed to record vote');
+                }
+            })
+            .catch(error => {
+                console.error('Error voting:', error);
+            });
+        }
+
+        function addComment(placeId) {
+            const input = document.getElementById(`comment-input-${placeId}`);
+            const comment = input.value.trim();
+            
+            if (!comment) {
+                input.focus();
+                return;
+            }
+            
+            // Disable input while submitting
+            input.disabled = true;
+            input.placeholder = 'Posting comment...';
+            
+            fetch('/api/add-comment', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    trip_id: TRIP_ID,
+                    place_id: placeId,
+                    comment: comment,
+                    user_name: PARTICIPANT_NAME
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    input.value = '';
+                    input.placeholder = 'Add a comment...';
+                    // Show success feedback briefly
+                    const originalPlaceholder = input.placeholder;
+                    input.placeholder = '✓ Comment posted!';
+                    setTimeout(() => {
+                        input.placeholder = originalPlaceholder;
+                    }, 2000);
+                    // Update will come through real-time polling
+                } else {
+                    alert(data.error || 'Failed to add comment');
+                    input.placeholder = 'Add a comment...';
+                }
+            })
+            .catch(error => {
+                console.error('Error adding comment:', error);
+                alert('Failed to add comment. Please try again.');
+                input.placeholder = 'Add a comment...';
+            })
+            .finally(() => {
+                input.disabled = false;
+            });
+        }
+
+        function copyShareCode() {
+            navigator.clipboard.writeText(SHARE_CODE).then(() => {
+                alert('Share code copied to clipboard!');
+            });
+        }
+
+        function shareLink() {
+            const url = window.location.href;
+            navigator.clipboard.writeText(url).then(() => {
+                alert('Share link copied to clipboard!');
+            });
+        }
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            if (pollInterval) {
+                clearInterval(pollInterval);
+            }
+        });
+    </script>
+</body>
+</html>

@@ -540,6 +540,18 @@
         <button onclick="saveItinerary()" class="modern-btn" style="background: linear-gradient(135deg, #3498db, #2980b9); color: white; border: none; padding: 18px 30px; border-radius: 50px; cursor: pointer; display: flex; align-items: center; gap: 10px; font-size: 16px; font-weight: 600; box-shadow: 0 8px 25px rgba(52, 152, 219, 0.3); transition: all 0.3s ease; position: relative; overflow: hidden;">
           💾 Save Trip
         </button>
+        
+        {% if is_collaborative and trip_id %}
+        <!-- Dashboard button for collaborative trips -->
+        <button onclick="window.open('/dashboard/collaborative/{{ trip_id }}', '_blank')" class="modern-btn" style="background: linear-gradient(135deg, #e67e22, #d35400); color: white; border: none; padding: 18px 30px; border-radius: 50px; cursor: pointer; display: flex; align-items: center; gap: 10px; font-size: 16px; font-weight: 600; box-shadow: 0 8px 25px rgba(230, 126, 34, 0.3); transition: all 0.3s ease; position: relative; overflow: hidden;">
+          📊 Organizer Dashboard
+        </button>
+        {% else %}
+        <!-- NEW: Collaborative Features -->
+        <button onclick="createCollaborativeTrip()" class="modern-btn" style="background: linear-gradient(135deg, #9b59b6, #8e44ad); color: white; border: none; padding: 18px 30px; border-radius: 50px; cursor: pointer; display: flex; align-items: center; gap: 10px; font-size: 16px; font-weight: 600; box-shadow: 0 8px 25px rgba(155, 89, 182, 0.3); transition: all 0.3s ease; position: relative; overflow: hidden;">
+          🤝 Share for Collaboration
+        </button>
+        {% endif %}
       </div>
       
       <div id="action-feedback" style="margin-top: 20px; font-weight: 600; font-size: 1.1rem;"></div>
@@ -1508,6 +1520,127 @@
     
     // Add easter eggs after map loads
     setTimeout(addEasterEggs, 1000);
+
+    // =============================================================================
+    // COLLABORATIVE TRIP PLANNING FUNCTION
+    // =============================================================================
+    
+    async function createCollaborativeTrip() {
+      const feedback = document.getElementById('action-feedback');
+      
+      // Check if data is available
+      if (!placesData || placesData.length === 0) {
+        feedback.style.color = '#e74c3c';
+        feedback.textContent = '❌ No places data available to share';
+        setTimeout(() => feedback.textContent = '', 3000);
+        return;
+      }
+      
+      // Get creator name
+      const creatorName = prompt('Enter your name for the collaborative trip:', 'Trip Organizer');
+      if (!creatorName) return;
+      
+      feedback.style.color = '#9b59b6';
+      feedback.textContent = '🤝 Creating collaborative trip...';
+      
+      try {
+        // Prepare trip data for collaboration
+        const collaborativeTripData = {
+          destination: extractCityFromPlaces(placesData),
+          description: `Collaborative trip to ${extractCityFromPlaces(placesData)} with ${placesData.length} places`,
+          places: placesData.map(place => ({
+            place_id: place.place_id || place.name.replace(/\s+/g, '_'),
+            name: place.name,
+            rating: place.rating,
+            vicinity: place.vicinity || place.address,
+            types: place.types || [],
+            price_level: place.price_level
+          })),
+          budget_estimate: window.pageBudgetEstimate || calculateBudgetEstimate(placesData),
+          created_at: new Date().toISOString(),
+          route_info: {
+            distance: directionsData?.routes?.[0]?.distanceMeters || 0,
+            duration: directionsData?.routes?.[0]?.duration || 0
+          }
+        };
+        
+        const response = await fetch('/api/create-collaborative-trip', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            trip_data: collaborativeTripData,
+            creator_name: creatorName
+          })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          feedback.style.color = '#2ecc71';
+          feedback.innerHTML = `
+            ✅ Collaborative trip created! <br>
+            <strong>Share Code: ${data.share_code}</strong> <br>
+            <button onclick="copyToClipboard('${data.share_url}')" style="margin: 5px; padding: 8px 15px; background: #3498db; color: white; border: none; border-radius: 20px; cursor: pointer;">
+              📋 Copy Link
+            </button>
+            <button onclick="window.open('${data.share_url}', '_blank')" style="margin: 5px; padding: 8px 15px; background: #9b59b6; color: white; border: none; border-radius: 20px; cursor: pointer;">
+              🚀 Open Collaborative Trip
+            </button>
+            <button onclick="window.open('/dashboard/collaborative/${data.trip_id}', '_blank')" style="margin: 5px; padding: 8px 15px; background: #e74c3c; color: white; border: none; border-radius: 20px; cursor: pointer;">
+              📊 View Dashboard
+            </button>
+          `;
+          
+          console.log('🤝 Collaborative trip created:', data);
+        } else {
+          throw new Error(data.error || 'Failed to create collaborative trip');
+        }
+      } catch (error) {
+        feedback.style.color = '#e74c3c';
+        feedback.textContent = `❌ Failed to create collaborative trip: ${error.message}`;
+        console.error('💥 Collaborative trip error:', error);
+      }
+      
+      setTimeout(() => {
+        if (feedback.innerHTML.includes('✅')) {
+          // Keep success message longer
+          setTimeout(() => feedback.textContent = '', 10000);
+        } else {
+          feedback.textContent = '';
+        }
+      }, 5000);
+    }
+    
+    function copyToClipboard(text) {
+      navigator.clipboard.writeText(text).then(() => {
+        const feedback = document.getElementById('action-feedback');
+        const originalContent = feedback.innerHTML;
+        feedback.style.color = '#2ecc71';
+        feedback.textContent = '📋 Link copied to clipboard!';
+        setTimeout(() => {
+          feedback.innerHTML = originalContent;
+        }, 2000);
+      }).catch(err => {
+        console.error('Failed to copy:', err);
+        // Fallback for older browsers
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        
+        const feedback = document.getElementById('action-feedback');
+        const originalContent = feedback.innerHTML;
+        feedback.style.color = '#2ecc71';
+        feedback.textContent = '📋 Link copied to clipboard!';
+        setTimeout(() => {
+          feedback.innerHTML = originalContent;
+        }, 2000);
+      });
+    }
   </script>
 
   <!-- 💬 Floating GPT Assistant -->

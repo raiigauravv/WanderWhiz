@@ -1,25 +1,50 @@
 """
-WanderWhiz - AI-Powered Travel Itinerary Planner
-=================================================
+WanderWhiz - Next-Generation AI Travel Intelligence Platform
+===========================================================
 
-A Flask web application that creates personalized travel itineraries using:
-- OpenAI GPT for intelligent destination suggestions
-- Google Places API for location data and ratings
-- Google Routes API for optimized travel routing
-- Firebase Firestore for secure trip storage
-- Real-time budget estimation with preservation
-- PDF export functionality with proper city names
+An intelligent travel companion that combines advanced AI with real-time data to create
+personalized, context-aware itineraries that adapt to your unique travel style.
 
-Features:
-- AI-powered trip planning based on user interests
-- Interactive Google Maps integration
-- Budget estimation and preservation across reloads
-- Trip saving/loading with Firebase backend
-- PDF export with detailed itineraries
-- Responsive web interface
+🤖 ADVANCED AI FEATURES:
+- GPT-powered natural language trip planning with context understanding
+- Intelligent place clustering and route optimization using Google's latest APIs
+- Smart budget prediction with dynamic price level analysis
+- Contextual recommendations based on place types, ratings, and user preferences
 
-Author: WanderWhiz Team
+🗺️ GOOGLE PLATFORM INTEGRATION:
+- Google Places API with advanced text search and filtering
+- Google Routes API v2 with traffic-aware optimization
+- Interactive Google Maps with custom markers and polylines
+- Real-time geocoding and reverse geocoding for location intelligence
+
+🧠 INTELLIGENT DATA PROCESSING:
+- Advanced data cleaning and validation pipeline
+- Robust error handling with graceful degradation
+- Smart coordinate validation and geographic clustering
+- JSON serialization safety with undefined value handling
+
+💰 SMART BUDGET INTELLIGENCE:
+- Dynamic cost estimation based on place characteristics
+- Price level analysis with regional adjustments
+- Budget preservation across sessions with validation
+- Comprehensive breakdown by category with miscellaneous calculations
+
+📱 PRODUCTION-READY ARCHITECTURE:
+- Firebase Firestore integration for scalable trip storage
+- PDF generation with professional styling and layouts
+- Responsive web interface with modern UI/UX
+- Vercel deployment with automatic CI/CD pipeline
+
+🎯 INNOVATION HIGHLIGHTS:
+- Natural language to structured itinerary transformation
+- Multi-API orchestration with error resilience
+- Real-time budget tracking with intelligent preservation
+- Context-aware place filtering and geographic optimization
+
+Built for Google Platforms Award - Showcasing the power of AI + Google Cloud ecosystem
+Author: WanderWhiz Innovation Team
 Last Updated: July 30, 2025
+Version: 2.0 - AI-Enhanced Edition
 """
 
 # Core Flask and web framework imports
@@ -48,6 +73,7 @@ from io import BytesIO
 # Firebase integration with graceful fallback
 try:
     from firebase_config import get_firebase_manager
+    from collaborative_planning import CollaborativeTripManager
     firebase_enabled = True
     print("🔥 Firebase integration enabled!")
 except ImportError as e:
@@ -64,6 +90,238 @@ app.secret_key = os.getenv("SECRET_KEY", "your-secret-key-here")
 # API Keys configuration
 GOOGLE_MAPS_API_KEY = os.getenv("GOOGLE_MAPS_API_KEY")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+
+# Initialize Collaborative Trip Manager
+collaborative_manager = None
+if firebase_enabled:
+    try:
+        firebase_manager = get_firebase_manager()
+        collaborative_manager = CollaborativeTripManager(firebase_manager)
+        print("🤝 Collaborative Trip Manager initialized!")
+    except Exception as e:
+        print(f"⚠️ Could not initialize collaborative manager: {e}")
+
+# =============================================================================
+# AI PERSONALITY LEARNING SYSTEM
+# =============================================================================
+
+class UserPreferenceTracker:
+    """
+    Advanced AI system that learns user travel preferences and adapts recommendations.
+    
+    This system tracks:
+    - Place type preferences (museums vs restaurants vs outdoor activities)
+    - Budget patterns and spending preferences
+    - Geographic preferences (urban vs suburban vs rural)
+    - Activity timing preferences (morning vs evening activities)
+    - Travel style (solo vs group, luxury vs budget, adventure vs relaxation)
+    """
+    
+    def __init__(self, user_id=None):
+        self.user_id = user_id or session.get('user_id', str(uuid.uuid4()))
+        session['user_id'] = self.user_id
+        self.preferences = self.load_preferences()
+    
+    def load_preferences(self):
+        """Load user preferences from session or create new profile"""
+        default_preferences = {
+            'place_type_scores': {
+                'restaurant': 0, 'tourist_attraction': 0, 'museum': 0, 'park': 0,
+                'shopping_mall': 0, 'cafe': 0, 'art_gallery': 0, 'zoo': 0,
+                'amusement_park': 0, 'beach': 0, 'hiking': 0, 'nightlife': 0
+            },
+            'budget_preference': 'moderate',  # budget, moderate, luxury
+            'activity_intensity': 'balanced',  # relaxed, balanced, active
+            'cultural_interest': 0.5,  # 0-1 scale
+            'outdoor_preference': 0.5,  # 0-1 scale
+            'food_importance': 0.5,  # 0-1 scale
+            'social_preference': 'mixed',  # solo, small_group, large_group, mixed
+            'time_preference': 'flexible',  # morning, afternoon, evening, flexible
+            'learning_sessions': 0,
+            'total_places_selected': 0,
+            'avg_trip_budget': 0,
+            'preferred_trip_duration': 'half_day'  # hour, half_day, full_day, multi_day
+        }
+        
+        return session.get(f'preferences_{self.user_id}', default_preferences)
+    
+    def save_preferences(self):
+        """Save preferences to session"""
+        session[f'preferences_{self.user_id}'] = self.preferences
+        session.permanent = True
+    
+    def analyze_place_selection(self, selected_places):
+        """
+        Learn from user's place selections to improve future recommendations.
+        
+        Args:
+            selected_places (list): List of places the user selected for their itinerary
+        """
+        if not selected_places:
+            return
+        
+        print(f"🧠 Learning from {len(selected_places)} selected places...")
+        
+        # Analyze place types
+        for place in selected_places:
+            place_types = place.get('types', [])
+            price_level = place.get('price_level', 2)
+            rating = place.get('rating', 3.5)
+            
+            # Update place type preferences (higher weight for highly rated places)
+            weight = 1.0 + (rating - 3.0) * 0.2  # Boost learning from high-rated places
+            
+            for place_type in place_types:
+                if place_type in self.preferences['place_type_scores']:
+                    self.preferences['place_type_scores'][place_type] += weight
+            
+            # Learn budget preferences
+            if price_level <= 1:
+                self.update_budget_preference('budget', 0.3)
+            elif price_level >= 3:
+                self.update_budget_preference('luxury', 0.3)
+            else:
+                self.update_budget_preference('moderate', 0.2)
+        
+        # Update learning metrics
+        self.preferences['learning_sessions'] += 1
+        self.preferences['total_places_selected'] += len(selected_places)
+        
+        # Analyze cultural vs outdoor preferences
+        cultural_places = sum(1 for place in selected_places 
+                            if any(t in place.get('types', []) 
+                                 for t in ['museum', 'art_gallery', 'library', 'church', 'synagogue']))
+        outdoor_places = sum(1 for place in selected_places 
+                           if any(t in place.get('types', []) 
+                                for t in ['park', 'beach', 'hiking', 'campground', 'lake']))
+        
+        if cultural_places > 0:
+            self.preferences['cultural_interest'] = min(1.0, 
+                self.preferences['cultural_interest'] + 0.1 * (cultural_places / len(selected_places)))
+        
+        if outdoor_places > 0:
+            self.preferences['outdoor_preference'] = min(1.0, 
+                self.preferences['outdoor_preference'] + 0.1 * (outdoor_places / len(selected_places)))
+        
+        self.save_preferences()
+        print(f"✅ Learned preferences from trip. Learning sessions: {self.preferences['learning_sessions']}")
+    
+    def update_budget_preference(self, budget_type, strength):
+        """Update budget preference with decay for other types"""
+        current = self.preferences.get('budget_preference', 'moderate')
+        
+        # Simple learning: if user consistently picks a budget type, adapt
+        if current != budget_type:
+            # Gradual shift towards new preference
+            self.preferences['budget_preference'] = budget_type
+    
+    def get_personalized_recommendations(self, all_places, limit=10):
+        """
+        Use learned preferences to score and rank places for personalized recommendations.
+        
+        Args:
+            all_places (list): All available places
+            limit (int): Maximum number of recommendations to return
+            
+        Returns:
+            list: Top recommended places based on user preferences
+        """
+        if not all_places or self.preferences['learning_sessions'] == 0:
+            # No learning data yet, return original list
+            return all_places[:limit]
+        
+        print(f"🎯 Generating personalized recommendations using {self.preferences['learning_sessions']} learning sessions...")
+        
+        scored_places = []
+        
+        for place in all_places:
+            score = self.calculate_place_score(place)
+            scored_places.append((place, score))
+        
+        # Sort by score (highest first) and return top places
+        scored_places.sort(key=lambda x: x[1], reverse=True)
+        recommended_places = [place for place, score in scored_places[:limit]]
+        
+        print(f"✨ Personalized recommendations ready! Top place: {recommended_places[0]['name'] if recommended_places else 'None'}")
+        return recommended_places
+    
+    def calculate_place_score(self, place):
+        """
+        Calculate a personalization score for a place based on learned preferences.
+        
+        Args:
+            place (dict): Place data from Google Places API
+            
+        Returns:
+            float: Personalization score (higher = better match)
+        """
+        base_score = place.get('rating', 3.5)  # Start with Google's rating
+        preference_boost = 0
+        
+        # Boost score based on learned place type preferences
+        place_types = place.get('types', [])
+        for place_type in place_types:
+            if place_type in self.preferences['place_type_scores']:
+                type_score = self.preferences['place_type_scores'][place_type]
+                # Normalize type score (higher = more preferred)
+                preference_boost += type_score * 0.1
+        
+        # Budget preference alignment
+        price_level = place.get('price_level', 2)
+        budget_pref = self.preferences['budget_preference']
+        
+        if budget_pref == 'budget' and price_level <= 1:
+            preference_boost += 0.5
+        elif budget_pref == 'luxury' and price_level >= 3:
+            preference_boost += 0.5
+        elif budget_pref == 'moderate' and 1 < price_level < 3:
+            preference_boost += 0.3
+        
+        # Cultural interest boost
+        cultural_types = ['museum', 'art_gallery', 'library', 'church', 'synagogue', 'cultural_center']
+        if any(t in place_types for t in cultural_types):
+            preference_boost += self.preferences['cultural_interest'] * 0.4
+        
+        # Outdoor preference boost
+        outdoor_types = ['park', 'beach', 'hiking', 'campground', 'lake', 'mountain']
+        if any(t in place_types for t in outdoor_types):
+            preference_boost += self.preferences['outdoor_preference'] * 0.4
+        
+        # Food importance boost
+        food_types = ['restaurant', 'cafe', 'bakery', 'meal_takeaway', 'food']
+        if any(t in place_types for t in food_types):
+            preference_boost += self.preferences['food_importance'] * 0.3
+        
+        total_score = base_score + preference_boost
+        return round(total_score, 2)
+    
+    def get_learning_insights(self):
+        """
+        Generate insights about what the AI has learned about the user.
+        
+        Returns:
+            dict: Human-readable insights about user preferences
+        """
+        if self.preferences['learning_sessions'] == 0:
+            return {"message": "No learning data yet. Create your first itinerary to start learning!"}
+        
+        # Find top preferred place types
+        place_scores = self.preferences['place_type_scores']
+        top_types = sorted(place_scores.items(), key=lambda x: x[1], reverse=True)[:3]
+        top_types = [t for t, s in top_types if s > 0]
+        
+        insights = {
+            "learning_sessions": self.preferences['learning_sessions'],
+            "total_places_selected": self.preferences['total_places_selected'],
+            "top_place_types": top_types,
+            "budget_preference": self.preferences['budget_preference'],
+            "cultural_interest_level": round(self.preferences['cultural_interest'] * 100),
+            "outdoor_preference_level": round(self.preferences['outdoor_preference'] * 100),
+            "food_importance_level": round(self.preferences['food_importance'] * 100),
+            "learning_confidence": min(100, self.preferences['learning_sessions'] * 20)
+        }
+        
+        return insights
 
 # =============================================================================
 # DATA CLEANING AND VALIDATION UTILITIES
@@ -910,6 +1168,17 @@ def gpt_assist():
                 # Re-clean the data more aggressively
                 places = clean_place_data(places) or []
 
+        # 🧠 AI PERSONALIZATION: Apply learned preferences to recommendations
+        try:
+            preference_tracker = UserPreferenceTracker()
+            if places and preference_tracker.preferences['learning_sessions'] > 0:
+                print("🎯 Applying AI personalization to search results...")
+                places = preference_tracker.get_personalized_recommendations(places, limit=20)
+                print(f"✨ Personalized {len(places)} places based on your preferences!")
+        except Exception as ai_error:
+            print(f"⚠️ AI personalization error (non-critical): {ai_error}")
+            # Continue with original places if AI fails
+
         return render_template("index.html", 
                              api_key=GOOGLE_MAPS_API_KEY,
                              places=places, 
@@ -1234,6 +1503,19 @@ def itinerary():
             'api_key': GOOGLE_MAPS_API_KEY
         }
         
+        # 🧠 AI LEARNING: Learn from user's place selections
+        try:
+            preference_tracker = UserPreferenceTracker()
+            preference_tracker.analyze_place_selection(ordered_places)
+            
+            # Add learning insights to template
+            learning_insights = preference_tracker.get_learning_insights()
+            template_data['learning_insights'] = learning_insights
+            print(f"🧠 AI learned from this itinerary! Sessions: {learning_insights.get('learning_sessions', 0)}")
+        except Exception as ai_error:
+            print(f"⚠️ AI learning error (non-critical): {ai_error}")
+            template_data['learning_insights'] = {"message": "Learning temporarily unavailable"}
+        
         # Final deep clean of all template data
         template_data = deep_clean_data(template_data)
         
@@ -1280,6 +1562,87 @@ def estimate_budget_api():
     except Exception as e:
         print(f"💥 Budget Estimation Error: {e}")
         return jsonify({"error": str(e)}), 500
+
+
+# =============================================================================
+# AI LEARNING AND PERSONALIZATION API ROUTES
+# =============================================================================
+
+@app.route("/api/learning-insights", methods=["GET"])
+def get_learning_insights():
+    """Get AI learning insights for the current user"""
+    try:
+        preference_tracker = UserPreferenceTracker()
+        insights = preference_tracker.get_learning_insights()
+        return jsonify(insights)
+    except Exception as e:
+        print(f"💥 Learning Insights Error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route("/api/personalized-suggestions", methods=["POST"])
+def get_personalized_suggestions():
+    """Get AI-powered personalized place suggestions"""
+    try:
+        data = request.get_json()
+        city = data.get('city', '')
+        places = data.get('places', [])
+        
+        if not places:
+            return jsonify({'suggestions': []})
+        
+        preference_tracker = UserPreferenceTracker()
+        
+        # Get personalized recommendations
+        recommendations = preference_tracker.get_personalized_recommendations(places, limit=10)
+        
+        # Add personalization scores for debugging
+        scored_recommendations = []
+        for place in recommendations:
+            score = preference_tracker.calculate_place_score(place)
+            place_with_score = place.copy()
+            place_with_score['ai_score'] = score
+            scored_recommendations.append(place_with_score)
+        
+        return jsonify({
+            'suggestions': scored_recommendations,
+            'learning_status': {
+                'sessions': preference_tracker.preferences['learning_sessions'],
+                'confidence': min(100, preference_tracker.preferences['learning_sessions'] * 20)
+            }
+        })
+        
+    except Exception as e:
+        print(f"💥 Personalized Suggestions Error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route("/api/reset-learning", methods=["POST"])
+def reset_learning():
+    """Reset user's AI learning data (for testing/demo purposes)"""
+    try:
+        user_id = session.get('user_id', str(uuid.uuid4()))
+        session.pop(f'preferences_{user_id}', None)
+        session['user_id'] = str(uuid.uuid4())  # Generate new user ID
+        
+        return jsonify({'message': 'Learning data reset successfully'})
+    except Exception as e:
+        print(f"💥 Reset Learning Error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route("/learning-dashboard")
+def learning_dashboard():
+    """Render the AI learning dashboard page"""
+    try:
+        preference_tracker = UserPreferenceTracker()
+        insights = preference_tracker.get_learning_insights()
+        
+        return render_template("learning_dashboard.html", 
+                             insights=insights,
+                             api_key=GOOGLE_MAPS_API_KEY)
+    except Exception as e:
+        print(f"💥 Learning Dashboard Error: {e}")
+        return render_template("learning_dashboard.html", 
+                             insights={"message": "Dashboard temporarily unavailable"},
+                             api_key=GOOGLE_MAPS_API_KEY)
 
 @app.route("/export-pdf", methods=["POST"])
 def export_pdf():
@@ -2260,12 +2623,6 @@ def enhanced_save_itinerary():
         print(f"Enhanced save error: {e}")
         return jsonify({"error": "Could not save trip"}), 500
 
-
-if __name__ == "__main__":
-    import os
-    port = int(os.environ.get('PORT', 5001))
-    app.run(debug=True, port=port)
-
 # 🧹 Debug route to clear session data
 @app.route("/clear-session")
 def clear_session():
@@ -2292,3 +2649,674 @@ def debug_env():
     </ul>
     <p><a href='/'>← Back to Home</a></p>
     """
+
+# =============================================================================
+# COLLABORATIVE TRIP PLANNING ROUTES
+# =============================================================================
+
+@app.route('/api/create-collaborative-trip', methods=['POST'])
+def create_collaborative_trip():
+    """Create a new collaborative trip that can be shared"""
+    try:
+        if not collaborative_manager:
+            return jsonify({'error': 'Collaborative features not available'}), 503
+        
+        data = request.get_json()
+        trip_data = data.get('trip_data')
+        creator_name = data.get('creator_name', 'Anonymous')
+        
+        # Get user_id from session for consistent creator tracking
+        user_id = session.get('user_id', 'anonymous')
+        
+        if not trip_data:
+            return jsonify({'error': 'Trip data required'}), 400
+        
+        print(f"🤝 Creating collaborative trip for user_id: {user_id}, creator_name: {creator_name}")
+        
+        trip_id, share_code = collaborative_manager.create_collaborative_trip(
+            trip_data, creator_name, creator_id=user_id
+        )
+        
+        if trip_id and share_code:
+            return jsonify({
+                'success': True,
+                'trip_id': trip_id,
+                'share_code': share_code,
+                'share_url': f"{request.host_url}collaborate/{share_code}",
+                'message': 'Collaborative trip created successfully!'
+            })
+        else:
+            return jsonify({'error': 'Failed to create collaborative trip'}), 500
+            
+    except Exception as e:
+        print(f"❌ Error creating collaborative trip: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/join-trip', methods=['POST'])
+def join_trip():
+    """Join an existing collaborative trip"""
+    try:
+        if not collaborative_manager:
+            return jsonify({'error': 'Collaborative features not available'}), 503
+        
+        data = request.get_json()
+        share_code = data.get('share_code')
+        participant_name = data.get('participant_name', 'Anonymous')
+        
+        if not share_code:
+            return jsonify({'error': 'Share code required'}), 400
+        
+        trip_id, message = collaborative_manager.join_trip(share_code, participant_name)
+        
+        if trip_id:
+            # Store in session
+            session['collaborative_trip_id'] = trip_id
+            session['participant_name'] = participant_name
+            
+            return jsonify({
+                'success': True,
+                'trip_id': trip_id,
+                'message': message
+            })
+        else:
+            return jsonify({'error': message}), 400
+            
+    except Exception as e:
+        print(f"❌ Error joining trip: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/collaborative-trip/<trip_id>')
+def get_collaborative_trip(trip_id):
+    """Get collaborative trip data"""
+    try:
+        if not collaborative_manager:
+            return jsonify({'error': 'Collaborative features not available'}), 503
+        
+        trip_data = collaborative_manager.get_collaborative_trip(trip_id)
+        
+        if trip_data:
+            return jsonify({
+                'success': True,
+                'trip_data': trip_data
+            })
+        else:
+            return jsonify({'error': 'Trip not found'}), 404
+            
+    except Exception as e:
+        print(f"❌ Error getting trip: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/vote-place', methods=['POST'])
+def vote_on_place():
+    """Vote on a place in collaborative trip"""
+    try:
+        if not collaborative_manager:
+            return jsonify({'error': 'Collaborative features not available'}), 503
+        
+        data = request.get_json()
+        trip_id = data.get('trip_id')
+        place_id = data.get('place_id')
+        vote = data.get('vote')  # 'like', 'dislike', 'love'
+        user_name = data.get('user_name', session.get('participant_name', 'Anonymous'))
+        
+        if not all([trip_id, place_id, vote]):
+            return jsonify({'error': 'Missing required fields'}), 400
+        
+        success = collaborative_manager.vote_on_place(trip_id, place_id, vote, user_name)
+        
+        if success:
+            return jsonify({'success': True, 'message': 'Vote recorded'})
+        else:
+            return jsonify({'error': 'Failed to record vote'}), 500
+            
+    except Exception as e:
+        print(f"❌ Error voting: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/add-comment', methods=['POST'])
+def add_comment():
+    """Add comment to a place in collaborative trip"""
+    try:
+        if not collaborative_manager:
+            return jsonify({'error': 'Collaborative features not available'}), 503
+        
+        data = request.get_json()
+        trip_id = data.get('trip_id')
+        place_id = data.get('place_id')
+        comment = data.get('comment')
+        user_name = data.get('user_name', session.get('participant_name', 'Anonymous'))
+        
+        if not all([trip_id, place_id, comment]):
+            return jsonify({'error': 'Missing required fields'}), 400
+        
+        success = collaborative_manager.add_comment(trip_id, place_id, comment, user_name)
+        
+        if success:
+            return jsonify({'success': True, 'message': 'Comment added'})
+        else:
+            return jsonify({'error': 'Failed to add comment'}), 500
+            
+    except Exception as e:
+        print(f"❌ Error adding comment: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/collaborate/<share_code>')
+def collaborate_page(share_code):
+    """Collaborative trip page accessed via share code"""
+    try:
+        if not collaborative_manager:
+            return render_template('error.html', 
+                                 error="Collaborative features not available")
+        
+        # Find trip by share code using Firestore
+        from firebase_admin import firestore
+        db = firestore.client()
+        share_ref = db.collection('share_codes').document(share_code)
+        share_doc = share_ref.get()
+        
+        if not share_doc.exists:
+            return render_template('error.html', 
+                                 error="Invalid share code")
+        
+        share_data = share_doc.to_dict()
+        trip_id = share_data['trip_id']
+        trip_data = collaborative_manager.get_collaborative_trip(trip_id)
+        
+        if not trip_data:
+            return render_template('error.html', 
+                                 error="Trip not found")
+        
+        return render_template('collaborative_trip.html', 
+                             trip_data=trip_data, 
+                             share_code=share_code,
+                             trip_id=trip_id)
+                             
+    except Exception as e:
+        print(f"❌ Error loading collaborative page: {e}")
+        return render_template('error.html', 
+                             error="Failed to load collaborative trip")
+
+# Test route to verify collaborative routes are loaded
+@app.route('/api/test-collaborative', methods=['GET'])
+def test_collaborative():
+    """Test route to verify collaborative features are loaded"""
+    return jsonify({
+        'collaborative_manager_exists': collaborative_manager is not None,
+        'message': 'Collaborative routes are loaded!'
+    })
+
+# Get collaborative trips for organizer dashboard access
+@app.route('/api/my-collaborative-trips', methods=['GET'])
+def get_my_collaborative_trips():
+    """Get all collaborative trips created by the current user"""
+    
+    if not collaborative_manager:
+        return jsonify({'error': 'Collaborative features not available'}), 500
+    
+    try:
+        user_id = session.get('user_id', 'anonymous')
+        print(f"🔍 Debug: Looking for collaborative trips created by user_id: {user_id}")
+        
+        # Query Firebase for trips created by this user
+        if collaborative_manager.firestore_db:
+            trips_ref = collaborative_manager.firestore_db.collection('collaborative_trips')
+            
+            # Get all trips and filter by multiple possible creator values
+            all_trips = trips_ref.stream()
+            
+            # Possible creator values to match against
+            possible_creator_values = [
+                user_id,           # Current user_id (e.g., "anonymous")
+                user_id.title(),   # Capitalized version (e.g., "Anonymous") 
+                'Anonymous',       # Default creator name
+                'anonymous'        # Lowercase version
+            ]
+            
+            print(f"🔍 Debug: Searching for trips with creator values: {possible_creator_values}")
+            
+            collaborative_trips = []
+            for trip_doc in all_trips:
+                trip_data = trip_doc.to_dict()
+                trip_id = trip_doc.id
+                
+                # Check if this trip was created by the current user
+                creator = trip_data.get('creator', '')
+                creator_id = trip_data.get('creator_id', '')
+                participants = trip_data.get('participants', {})
+                
+                print(f"🔍 Debug: Trip {trip_id} has creator='{creator}', creator_id='{creator_id}'")
+                print(f"🔍 Debug: Trip {trip_id} participants: {participants}")
+                
+                # Match if creator or creator_id matches any of our possible values
+                is_creator_match = creator in possible_creator_values or creator_id in possible_creator_values
+                
+                # Also check if current user is the owner in participants
+                is_owner_in_participants = False
+                for participant_key, participant_info in participants.items():
+                    if isinstance(participant_info, dict):
+                        participant_id = participant_info.get('id', '')
+                        participant_role = participant_info.get('role', '')
+                        print(f"🔍 Debug: Checking participant {participant_key}: id='{participant_id}', role='{participant_role}'")
+                        if (participant_role == 'owner' and 
+                            (participant_id in possible_creator_values or 
+                             participant_key in possible_creator_values)):
+                            is_owner_in_participants = True
+                            print(f"✅ Debug: Found owner participant {participant_key} with id '{participant_id}'")
+                            break
+                
+                # Special case: if user_id is 'anonymous' and this trip has empty creator_id,
+                # it might be a trip created by this anonymous user before proper ID tracking
+                is_anonymous_legacy_trip = (user_id == 'anonymous' and 
+                                          creator_id == '' and 
+                                          'creator' in participants and 
+                                          participants['creator'].get('role') == 'owner')
+                
+                if is_anonymous_legacy_trip:
+                    print(f"✅ Debug: Trip {trip_id} matches as anonymous legacy trip")
+                
+                if is_creator_match or is_owner_in_participants or is_anonymous_legacy_trip:
+                    print(f"✅ Debug: Found matching trip {trip_id}")
+                    
+                    # Get basic trip info
+                    trip_info = trip_data.get('trip_data', {})
+                    participants = trip_data.get('participants', {})
+                    votes = trip_data.get('votes', {})
+                    comments = trip_data.get('comments', {})
+                    
+                    # Count activity
+                    total_votes = sum(len(v) if isinstance(v, (list, dict)) else 0 for v in votes.values())
+                    total_comments = sum(len(c) if isinstance(c, dict) else 0 for c in comments.values())
+                    
+                    collaborative_trips.append({
+                        'trip_id': trip_id,
+                        'destination': trip_info.get('destination', 'Unknown Destination'),
+                        'share_code': trip_data.get('share_code', ''),
+                        'created_at': trip_data.get('created_at', ''),
+                        'participants_count': len(participants),
+                        'total_votes': total_votes,
+                        'total_comments': total_comments,
+                        'status': trip_data.get('status', 'active'),
+                        'last_updated': trip_data.get('last_updated', ''),
+                        'has_activity': total_votes > 0 or total_comments > 0
+                    })
+                else:
+                    print(f"❌ Debug: Trip {trip_id} doesn't match current user")
+            
+            # Sort by last updated (most recent first)
+            collaborative_trips.sort(key=lambda x: x.get('last_updated', ''), reverse=True)
+            
+            return jsonify({
+                'success': True,
+                'trips': collaborative_trips,
+                'total': len(collaborative_trips)
+            })
+        else:
+            return jsonify({
+                'success': True,
+                'trips': [],
+                'total': 0
+            })
+            
+    except Exception as e:
+        print(f"Error fetching collaborative trips: {e}")
+        return jsonify({'error': 'Failed to fetch collaborative trips'}), 500
+
+# Debug endpoint to see all trips
+@app.route('/debug/all-trips')
+def debug_all_trips():
+    """Debug endpoint to see what trips exist in Firestore"""
+    
+    if not collaborative_manager or not collaborative_manager.firestore_db:
+        return jsonify({'error': 'Firestore not available'})
+    
+    try:
+        trips_ref = collaborative_manager.firestore_db.collection('collaborative_trips')
+        all_trips = trips_ref.stream()
+        
+        trips_debug = []
+        for trip_doc in all_trips:
+            trip_data = trip_doc.to_dict()
+            trips_debug.append({
+                'trip_id': trip_doc.id,
+                'creator': trip_data.get('creator', ''),
+                'creator_id': trip_data.get('creator_id', ''),
+                'creator_name': trip_data.get('creator_name', ''),
+                'share_code': trip_data.get('share_code', ''),
+                'destination': trip_data.get('trip_data', {}).get('destination', 'Unknown'),
+                'created_at': trip_data.get('created_at', '')
+            })
+        
+        return jsonify({
+            'total_trips': len(trips_debug),
+            'trips': trips_debug,
+            'current_user_id': session.get('user_id', 'anonymous')
+        })
+    
+    except Exception as e:
+        return jsonify({'error': str(e)})
+
+# View collaborative trip as regular itinerary (for organizers)
+@app.route('/collaborative-trip/<trip_id>')
+def view_collaborative_trip(trip_id):
+    """View a collaborative trip in itinerary format"""
+    
+    if not collaborative_manager:
+        return render_template('error.html', message='Collaborative features not available')
+    
+    try:
+        # Get trip data
+        trip_data = collaborative_manager.get_collaborative_trip(trip_id)
+        
+        if not trip_data:
+            return render_template('error.html', message='Trip not found')
+        
+        # Extract the actual itinerary data
+        itinerary_data = trip_data.get('trip_data', {})
+        
+        # Convert collaborative trip to itinerary format
+        places = itinerary_data.get('places', [])
+        destination = itinerary_data.get('destination', 'Unknown Destination')
+        
+        # Add vote counts to places for display
+        votes = trip_data.get('votes', {})
+        for place in places:
+            place_id = place.get('place_id', '')
+            place_votes = votes.get(place_id, [])
+            place['vote_count'] = len(place_votes) if isinstance(place_votes, list) else len(place_votes) if isinstance(place_votes, dict) else 0
+            
+            # Calculate popular vote
+            if place_votes:
+                vote_counts = {'love': 0, 'like': 0, 'meh': 0, 'dislike': 0}
+                vote_list = place_votes if isinstance(place_votes, list) else place_votes.values()
+                for vote_data in vote_list:
+                    if isinstance(vote_data, dict):
+                        vote_type = vote_data.get('vote', 'meh')
+                        if vote_type in vote_counts:
+                            vote_counts[vote_type] += 1
+                
+                # Find most popular vote
+                max_vote = max(vote_counts, key=vote_counts.get)
+                place['popular_vote'] = max_vote if vote_counts[max_vote] > 0 else None
+        
+        # Prepare template data
+        template_data = {
+            'places': places,
+            'destination': destination,
+            'total_distance': itinerary_data.get('total_distance', 0),
+            'total_duration': itinerary_data.get('total_duration', 0),
+            'polyline': itinerary_data.get('polyline', ''),
+            'directions': {},  # Empty directions object for template compatibility
+            'budget_estimate': None,  # No budget for collaborative trips
+            'is_collaborative': True,
+            'trip_id': trip_id,
+            'share_code': trip_data.get('share_code', ''),
+            'participants_count': len(trip_data.get('participants', {})),
+            'total_votes': sum(len(v) if isinstance(v, (list, dict)) else 0 for v in votes.values()),
+            'total_comments': sum(len(c) if isinstance(c, dict) else 0 for c in trip_data.get('comments', {}).values())
+        }
+        
+        return render_template('itinerary.html', **template_data)
+        
+    except Exception as e:
+        print(f"Error viewing collaborative trip: {e}")
+        import traceback
+        traceback.print_exc()
+        return render_template('error.html', message='Failed to load trip')
+
+# Dashboard for trip organizers to see collaborative activity
+@app.route('/dashboard/collaborative/<trip_id>')
+def collaborative_dashboard(trip_id):
+    """Dashboard for trip organizers to see all collaborative activity"""
+    
+    if not collaborative_manager:
+        return jsonify({'error': 'Collaborative features not available'}), 500
+    
+    try:
+        # Get trip data
+        trip_data = collaborative_manager.get_collaborative_trip(trip_id)
+        
+        if not trip_data:
+            return render_template('error.html', message='Trip not found')
+        
+        # Debug: Print trip data structure
+        print(f"🔍 Dashboard trip_data type: {type(trip_data)}")
+        print(f"🔍 Dashboard trip_data keys: {trip_data.keys() if isinstance(trip_data, dict) else 'Not a dict'}")
+        
+        # Check if user is the organizer
+        creator_id = trip_data.get('creator_id') if isinstance(trip_data, dict) else None
+        current_user = session.get('user_id', 'anonymous')
+        
+        # Get activity feed
+        activity_feed = get_activity_feed(trip_data)
+        
+        # Get participant stats
+        participant_stats = get_participant_stats(trip_data)
+        
+        # Get voting summary
+        voting_summary = get_voting_summary(trip_data)
+        
+        return render_template('collaborative_dashboard.html', 
+                             trip_data=trip_data,
+                             activity_feed=activity_feed,
+                             participant_stats=participant_stats,
+                             voting_summary=voting_summary,
+                             is_organizer=(current_user == creator_id))
+                             
+    except Exception as e:
+        print(f"Error loading collaborative dashboard: {e}")
+        import traceback
+        traceback.print_exc()
+        return render_template('error.html', message='Failed to load dashboard')
+
+def get_activity_feed(trip_data):
+    """Generate chronological activity feed"""
+    activities = []
+    
+    if not isinstance(trip_data, dict):
+        print(f"⚠️ get_activity_feed: trip_data is not dict, type: {type(trip_data)}")
+        return activities
+    
+    # Process votes
+    votes = trip_data.get('votes', {})
+    if isinstance(votes, dict):
+        for place_id, place_votes in votes.items():
+            if isinstance(place_votes, list):
+                for vote_data in place_votes:
+                    if isinstance(vote_data, dict):
+                        activities.append({
+                            'type': 'vote',
+                            'user': vote_data.get('user', 'Anonymous'),
+                            'action': f"voted {vote_data.get('vote', 'unknown')} on",
+                            'place': place_id.replace('_', ' ').title(),
+                            'timestamp': vote_data.get('timestamp', 0),
+                            'icon': '🗳️'
+                        })
+            elif isinstance(place_votes, dict):
+                # Handle case where votes are stored as dict instead of list
+                for vote_id, vote_data in place_votes.items():
+                    if isinstance(vote_data, dict):
+                        activities.append({
+                            'type': 'vote',
+                            'user': vote_data.get('user', 'Anonymous'),
+                            'action': f"voted {vote_data.get('vote', 'unknown')} on",
+                            'place': place_id.replace('_', ' ').title(),
+                            'timestamp': vote_data.get('timestamp', 0),
+                            'icon': '🗳️'
+                        })
+    
+    # Process comments
+    comments = trip_data.get('comments', {})
+    if isinstance(comments, dict):
+        for place_id, place_comments in comments.items():
+            if isinstance(place_comments, dict):
+                for comment_id, comment_data in place_comments.items():
+                    if isinstance(comment_data, dict):
+                        activities.append({
+                            'type': 'comment',
+                            'user': comment_data.get('user', 'Anonymous'),
+                            'action': f'commented on',
+                            'place': place_id.replace('_', ' ').title(),
+                            'content': comment_data.get('text', comment_data.get('comment', '')),
+                            'timestamp': comment_data.get('timestamp', 0),
+                            'icon': '💬'
+                        })
+    
+    # Sort by timestamp (newest first)
+    try:
+        activities.sort(key=lambda x: x.get('timestamp', 0), reverse=True)
+    except:
+        pass
+    
+    return activities[:20]  # Return last 20 activities
+
+def get_participant_stats(trip_data):
+    """Get statistics about participants"""
+    if not isinstance(trip_data, dict):
+        return {
+            'total_participants': 0,
+            'active_participants': 0,
+            'total_votes': 0,
+            'total_comments': 0,
+            'participants_list': []
+        }
+    
+    participants = trip_data.get('participants', {})
+    
+    stats = {
+        'total_participants': len(participants) if isinstance(participants, dict) else 0,
+        'active_participants': 0,
+        'total_votes': 0,
+        'total_comments': 0,
+        'participants_list': []
+    }
+    
+    # Count votes and comments per participant
+    participant_activity = {}
+    
+    # Count votes
+    votes = trip_data.get('votes', {})
+    if isinstance(votes, dict):
+        for place_votes in votes.values():
+            if isinstance(place_votes, list):
+                for vote_data in place_votes:
+                    if isinstance(vote_data, dict):
+                        user = vote_data.get('user', 'Anonymous')
+                        if user not in participant_activity:
+                            participant_activity[user] = {'votes': 0, 'comments': 0}
+                        participant_activity[user]['votes'] += 1
+                        stats['total_votes'] += 1
+            elif isinstance(place_votes, dict):
+                for vote_data in place_votes.values():
+                    if isinstance(vote_data, dict):
+                        user = vote_data.get('user', 'Anonymous')
+                        if user not in participant_activity:
+                            participant_activity[user] = {'votes': 0, 'comments': 0}
+                        participant_activity[user]['votes'] += 1
+                        stats['total_votes'] += 1
+    
+    # Count comments
+    comments = trip_data.get('comments', {})
+    if isinstance(comments, dict):
+        for place_comments in comments.values():
+            if isinstance(place_comments, dict):
+                for comment_data in place_comments.values():
+                    if isinstance(comment_data, dict):
+                        user = comment_data.get('user', 'Anonymous')
+                        if user not in participant_activity:
+                            participant_activity[user] = {'votes': 0, 'comments': 0}
+                        participant_activity[user]['comments'] += 1
+                        stats['total_comments'] += 1
+    
+    # Create participant list with activity
+    if isinstance(participants, dict):
+        for participant_id, participant_data in participants.items():
+            if isinstance(participant_data, dict):
+                user_name = participant_data.get('name', 'Anonymous')
+                activity = participant_activity.get(user_name, {'votes': 0, 'comments': 0})
+                
+                stats['participants_list'].append({
+                    'name': user_name,
+                    'role': participant_data.get('role', 'collaborator'),
+                    'joined_at': participant_data.get('joined_at', ''),
+                    'votes': activity['votes'],
+                    'comments': activity['comments'],
+                    'total_activity': activity['votes'] + activity['comments']
+                })
+                
+                if activity['votes'] > 0 or activity['comments'] > 0:
+                    stats['active_participants'] += 1
+    
+    # Sort by activity level
+    try:
+        stats['participants_list'].sort(key=lambda x: x['total_activity'], reverse=True)
+    except:
+        pass
+    
+    return stats
+
+def get_voting_summary(trip_data):
+    """Get summary of voting on each place"""
+    voting_summary = {}
+    
+    if not isinstance(trip_data, dict):
+        return voting_summary
+    
+    votes = trip_data.get('votes', {})
+    if not isinstance(votes, dict):
+        return voting_summary
+    
+    for place_id, place_votes in votes.items():
+        place_name = place_id.replace('_', ' ').title()
+        
+        vote_counts = {'love': 0, 'like': 0, 'meh': 0, 'dislike': 0}
+        total_votes = 0
+        
+        if isinstance(place_votes, list):
+            total_votes = len(place_votes)
+            for vote_data in place_votes:
+                if isinstance(vote_data, dict):
+                    vote_type = vote_data.get('vote', 'meh')
+                    if vote_type in vote_counts:
+                        vote_counts[vote_type] += 1
+        elif isinstance(place_votes, dict):
+            total_votes = len(place_votes)
+            for vote_data in place_votes.values():
+                if isinstance(vote_data, dict):
+                    vote_type = vote_data.get('vote', 'meh')
+                    if vote_type in vote_counts:
+                        vote_counts[vote_type] += 1
+        
+        # Calculate popularity score
+        popularity_score = (vote_counts['love'] * 3 + vote_counts['like'] * 1 - 
+                          vote_counts['dislike'] * 2)
+        
+        voting_summary[place_id] = {
+            'place_name': place_name,
+            'vote_counts': vote_counts,
+            'total_votes': total_votes,
+            'popularity_score': popularity_score,
+            'consensus_level': get_consensus_level(vote_counts, total_votes)
+        }
+    
+    return voting_summary
+
+def get_consensus_level(vote_counts, total_votes):
+    """Calculate how much consensus there is on a place"""
+    if total_votes == 0:
+        return 'no_votes'
+    
+    max_votes = max(vote_counts.values()) if vote_counts else 0
+    consensus_percentage = (max_votes / total_votes) * 100 if total_votes > 0 else 0
+    
+    if consensus_percentage >= 80:
+        return 'high_consensus'
+    elif consensus_percentage >= 60:
+        return 'moderate_consensus'
+    else:
+        return 'low_consensus'
+
+# Main application runner
+if __name__ == "__main__":
+    print("🚀 Starting WanderWhiz on http://localhost:5000")
+    print("🤝 Collaborative features available!")
+    app.run(debug=True, port=5000, host='0.0.0.0')

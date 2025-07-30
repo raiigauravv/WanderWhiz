@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Learning Dashboard - WanderWhiz</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .header h1 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+
+        .header p {
+            color: #7f8c8d;
+            font-size: 1.2em;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .card h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .stat-number {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #3498db;
+            margin: 10px 0;
+        }
+
+        .progress-bar {
+            background: #ecf0f1;
+            border-radius: 10px;
+            height: 20px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #3498db, #2ecc71);
+            border-radius: 10px;
+            transition: width 0.8s ease;
+        }
+
+        .preference-list {
+            list-style: none;
+            margin: 15px 0;
+        }
+
+        .preference-list li {
+            padding: 8px 0;
+            border-bottom: 1px solid #ecf0f1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .preference-badge {
+            background: #3498db;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.9em;
+        }
+
+        .ai-status {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-align: center;
+            padding: 20px;
+            border-radius: 15px;
+            margin: 20px 0;
+        }
+
+        .ai-status.learning {
+            background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+        }
+
+        .ai-status.new-user {
+            background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+        }
+
+        .actions {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 30px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: #3498db;
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #95a5a6;
+            color: white;
+        }
+
+        .btn-danger {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .insight-item {
+            background: #f8f9fa;
+            border-left: 4px solid #3498db;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .confidence-meter {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .confidence-circle {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            margin: 0 auto 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5em;
+            font-weight: bold;
+            color: white;
+            position: relative;
+        }
+
+        .confidence-low {
+            background: conic-gradient(from 0deg, #e74c3c 0%, #e74c3c 25%, #ecf0f1 25%);
+        }
+
+        .confidence-medium {
+            background: conic-gradient(from 0deg, #f39c12 0%, #f39c12 50%, #ecf0f1 50%);
+        }
+
+        .confidence-high {
+            background: conic-gradient(from 0deg, #2ecc71 0%, #2ecc71 75%, #ecf0f1 75%);
+        }
+
+        .confidence-perfect {
+            background: conic-gradient(from 0deg, #9b59b6 0%, #9b59b6 100%);
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .actions {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-brain"></i> AI Learning Dashboard</h1>
+            <p>See how WanderWhiz AI learns your travel preferences to create better recommendations</p>
+        </div>
+
+        {% if insights.message %}
+            <!-- New User State -->
+            <div class="ai-status new-user">
+                <h3><i class="fas fa-seedling"></i> Ready to Learn!</h3>
+                <p>{{ insights.message }}</p>
+                <p>Create your first itinerary to start training your personal AI travel assistant!</p>
+            </div>
+        {% else %}
+            <!-- Learning Active State -->
+            <div class="ai-status learning">
+                <h3><i class="fas fa-rocket"></i> AI Learning Active</h3>
+                <p>Your WanderWhiz AI has analyzed {{ insights.learning_sessions }} itineraries and is getting smarter!</p>
+            </div>
+
+            <div class="dashboard-grid">
+                <!-- Learning Progress Card -->
+                <div class="card">
+                    <h3><i class="fas fa-chart-line"></i> Learning Progress</h3>
+                    <div class="confidence-meter">
+                        {% set confidence = insights.learning_confidence %}
+                        <div class="confidence-circle 
+                            {% if confidence < 25 %}confidence-low
+                            {% elif confidence < 50 %}confidence-medium
+                            {% elif confidence < 75 %}confidence-high
+                            {% else %}confidence-perfect{% endif %}">
+                            {{ confidence }}%
+                        </div>
+                        <p><strong>AI Confidence Level</strong></p>
+                        <p>
+                            {% if confidence < 25 %}Building your profile...
+                            {% elif confidence < 50 %}Learning your style...
+                            {% elif confidence < 75 %}Getting personalized!
+                            {% else %}Expert recommendations!{% endif %}
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Trip Statistics Card -->
+                <div class="card">
+                    <h3><i class="fas fa-map-marked-alt"></i> Trip Statistics</h3>
+                    <div class="stat-number">{{ insights.learning_sessions }}</div>
+                    <p>Itineraries Analyzed</p>
+                    <div class="stat-number">{{ insights.total_places_selected }}</div>
+                    <p>Places Learned From</p>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: {{ [100, (insights.learning_sessions * 10)]|min }}%"></div>
+                    </div>
+                    <small>{{ [100, (insights.learning_sessions * 10)]|min }}% towards expert level</small>
+                </div>
+
+                <!-- Preferred Place Types Card -->
+                <div class="card">
+                    <h3><i class="fas fa-heart"></i> Your Favorite Types</h3>
+                    {% if insights.top_place_types %}
+                        <ul class="preference-list">
+                            {% for place_type in insights.top_place_types %}
+                                <li>
+                                    <span>{{ place_type.replace('_', ' ').title() }}</span>
+                                    <span class="preference-badge">Loved</span>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p>Keep creating itineraries to discover your preferences!</p>
+                    {% endif %}
+                </div>
+
+                <!-- Travel Style Card -->
+                <div class="card">
+                    <h3><i class="fas fa-user-circle"></i> Your Travel Style</h3>
+                    <div class="insight-item">
+                        <strong>Budget Preference:</strong> {{ insights.budget_preference.title() }}
+                    </div>
+                    <div class="insight-item">
+                        <strong>Cultural Interest:</strong> {{ insights.cultural_interest_level }}%
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: {{ insights.cultural_interest_level }}%"></div>
+                        </div>
+                    </div>
+                    <div class="insight-item">
+                        <strong>Outdoor Preference:</strong> {{ insights.outdoor_preference_level }}%
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: {{ insights.outdoor_preference_level }}%"></div>
+                        </div>
+                    </div>
+                    <div class="insight-item">
+                        <strong>Food Importance:</strong> {{ insights.food_importance_level }}%
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: {{ insights.food_importance_level }}%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+
+        <!-- Action Buttons -->
+        <div class="actions">
+            <a href="/" class="btn btn-primary">
+                <i class="fas fa-search"></i> Create New Itinerary
+            </a>
+            {% if not insights.message %}
+            <button onclick="testPersonalization()" class="btn btn-secondary">
+                <i class="fas fa-magic"></i> Test Personalization
+            </button>
+            <button onclick="resetLearning()" class="btn btn-danger">
+                <i class="fas fa-refresh"></i> Reset Learning
+            </button>
+            {% endif %}
+        </div>
+    </div>
+
+    <script>
+        function testPersonalization() {
+            alert('🧠 AI Personalization is working!\n\nYour next searches will show places ranked by your learned preferences.\n\nTry searching for places in a city you\'ve been to before and see the difference!');
+        }
+
+        function resetLearning() {
+            if (confirm('Are you sure you want to reset all AI learning data? This cannot be undone.')) {
+                fetch('/api/reset-learning', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    alert('✅ Learning data reset successfully!\n\nYour AI will start learning fresh from your next itinerary.');
+                    location.reload();
+                })
+                .catch(error => {
+                    alert('❌ Error resetting learning data. Please try again.');
+                    console.error('Reset error:', error);
+                });
+            }
+        }
+
+        // Add some interactive animations
+        document.addEventListener('DOMContentLoaded', function() {
+            // Animate progress bars
+            const progressBars = document.querySelectorAll('.progress-fill');
+            progressBars.forEach(bar => {
+                const width = bar.style.width;
+                bar.style.width = '0%';
+                setTimeout(() => {
+                    bar.style.width = width;
+                }, 500);
+            });
+
+            // Animate stat numbers
+            const statNumbers = document.querySelectorAll('.stat-number');
+            statNumbers.forEach(stat => {
+                const finalNumber = parseInt(stat.textContent);
+                let currentNumber = 0;
+                const increment = Math.ceil(finalNumber / 20);
+                
+                const timer = setInterval(() => {
+                    currentNumber += increment;
+                    if (currentNumber >= finalNumber) {
+                        currentNumber = finalNumber;
+                        clearInterval(timer);
+                    }
+                    stat.textContent = currentNumber;
+                }, 50);
+            });
+        });
+    </script>
+</body>
+</html>

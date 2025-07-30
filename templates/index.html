@@ -15,6 +15,13 @@
       <p class="subtitle">
         Search for hidden gems in any city around the world!
       </p>
+      <!-- AI Learning Status -->
+      <div id="ai-learning-status" style="margin-top: 15px;">
+        <div style="background: rgba(52, 152, 219, 0.1); border: 1px solid #3498db; border-radius: 8px; padding: 10px; display: inline-block;">
+          <span id="learning-indicator">🧠 AI Learning: <span id="learning-text">Loading...</span></span>
+          <a href="/learning-dashboard" style="margin-left: 10px; color: #3498db; text-decoration: none; font-size: 0.9em;">View Dashboard</a>
+        </div>
+      </div>
     </div>
 
     <!-- Trippi AI Travel Assistant -->
@@ -46,6 +53,65 @@
         <p>❌ {{ error }}</p>
       </div>
       {% endif %}
+    </div>
+
+    <!-- 🤝 NEW: Collaborative Planning Section -->
+    <div class="collaborative-section" style="
+      background: linear-gradient(135deg, #9b59b6, #8e44ad);
+      color: white;
+      padding: 30px;
+      margin: 30px auto;
+      max-width: 900px;
+      border-radius: 20px;
+      box-shadow: 0 15px 35px rgba(155, 89, 182, 0.3);
+      text-align: center;
+    ">
+      <h2 style="margin-bottom: 15px;">🤝 Join a Collaborative Trip</h2>
+      <p style="margin-bottom: 20px; opacity: 0.9;">
+        Got a share code? Join your friends and plan together in real-time!
+      </p>
+      <div style="display: flex; gap: 10px; justify-content: center; align-items: center; flex-wrap: wrap;">
+        <input 
+          type="text" 
+          id="collaborativeCode" 
+          placeholder="Enter 6-digit share code (e.g. ABC123)"
+          style="
+            padding: 12px 18px;
+            border: none;
+            border-radius: 25px;
+            font-size: 14px;
+            outline: none;
+            min-width: 280px;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            background: rgba(255, 255, 255, 0.9);
+            color: #2c3e50;
+            font-weight: 500;
+          "
+          maxlength="6"
+        />
+        <button 
+          onclick="joinCollaborativeTrip()"
+          style="
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 2px solid white;
+            padding: 12px 22px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+          "
+          onmouseover="this.style.background='white'; this.style.color='#9b59b6';"
+          onmouseout="this.style.background='rgba(255, 255, 255, 0.2)'; this.style.color='white';"
+        >
+          🚀 Join Trip
+        </button>
+      </div>
+      <div id="collaborative-feedback" style="margin-top: 15px; font-weight: 600;"></div>
     </div>
 
     <div
@@ -476,6 +542,42 @@
       </div>
     </div>
 
+    <!-- 🤝 Enhanced Collaborative Trips Section -->
+    <div
+      class="collaborative-trips-section"
+      style="
+        margin: 30px auto;
+        max-width: 900px;
+        padding: 30px;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(15px);
+        border-radius: 20px;
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+        border: 1px solid rgba(52, 152, 219, 0.2);
+      "
+    >
+      <h3
+        style="
+          color: #2c3e50;
+          font-size: 1.8rem;
+          font-weight: 700;
+          text-align: center;
+          margin-bottom: 25px;
+          background: linear-gradient(135deg, #3498db, #2980b9);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+        "
+      >
+        🤝 Your Collaborative Trips
+      </h3>
+      <div id="collaborative-trips-container">
+        <p style="color: #7f8c8d; text-align: center; font-size: 1.1rem">
+          Loading your collaborative adventures...
+        </p>
+      </div>
+    </div>
+
     <div class="legend">
       {% if places %}
       <span class="legend-item"
@@ -656,6 +758,44 @@
         window.mapCenter = { lat: 43.65107, lng: -79.347015 };
       }
 
+      // 🧠 AI Learning Status Loader
+      async function loadLearningStatus() {
+        try {
+          const response = await fetch('/api/learning-insights');
+          const insights = await response.json();
+          
+          const learningText = document.getElementById('learning-text');
+          
+          if (insights.message) {
+            learningText.textContent = 'Ready to learn! Create your first itinerary.';
+            learningText.style.color = '#f39c12';
+          } else {
+            const confidence = insights.learning_confidence || 0;
+            const sessions = insights.learning_sessions || 0;
+            
+            if (confidence < 25) {
+              learningText.textContent = `Building profile... (${sessions} trips)`;
+              learningText.style.color = '#e74c3c';
+            } else if (confidence < 50) {
+              learningText.textContent = `Learning your style (${confidence}% confident)`;
+              learningText.style.color = '#f39c12';
+            } else if (confidence < 75) {
+              learningText.textContent = `Getting personalized! (${confidence}% confident)`;
+              learningText.style.color = '#3498db';
+            } else {
+              learningText.textContent = `Expert recommendations (${confidence}% confident)`;
+              learningText.style.color = '#2ecc71';
+            }
+          }
+        } catch (error) {
+          console.warn('Learning status unavailable:', error);
+          document.getElementById('learning-text').textContent = 'Learning offline';
+        }
+      }
+
+      // Load learning status when page loads
+      document.addEventListener('DOMContentLoaded', loadLearningStatus);
+
       // 🗺️ Phase 4.5 - Load Saved Trips
       async function loadSavedTrips() {
         try {
@@ -714,6 +854,109 @@
         }
       }
 
+      // 🤝 Load Collaborative Trips
+      async function loadCollaborativeTrips() {
+        try {
+          const response = await fetch('/api/my-collaborative-trips');
+          const data = await response.json();
+
+          const container = document.getElementById('collaborative-trips-container');
+
+          if (data.success && data.trips && data.trips.length > 0) {
+            container.innerHTML = data.trips.map(trip => `
+              <div class="collaborative-trip-card" style="background: white; padding: 20px; margin: 15px 0; border-radius: 12px; border: 1px solid #ddd; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px;">
+                  <div style="flex: 1;">
+                    <h4 style="margin: 0 0 8px 0; color: #2c3e50; font-size: 1.2rem;">${trip.destination || 'Unknown Destination'}</h4>
+                    <p style="margin: 0 0 5px 0; color: #666; font-size: 0.9rem;">
+                      🔗 Share Code: <strong style="color: #3498db;">${trip.share_code}</strong>
+                    </p>
+                    <p style="margin: 0; color: #7f8c8d; font-size: 0.85rem;">
+                      Created ${trip.created_at ? new Date(trip.created_at).toLocaleDateString() : 'Recently'}
+                    </p>
+                  </div>
+                  ${trip.has_activity ? '<div style="background: #e74c3c; color: white; padding: 4px 8px; border-radius: 12px; font-size: 0.8rem; white-space: nowrap;">🔔 New Activity</div>' : ''}
+                </div>
+                
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 15px; margin-bottom: 15px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+                  <div style="text-align: center;">
+                    <div style="font-size: 1.4rem; font-weight: bold; color: #3498db;">${trip.participants_count}</div>
+                    <div style="font-size: 0.8rem; color: #666;">👥 Participants</div>
+                  </div>
+                  <div style="text-align: center;">
+                    <div style="font-size: 1.4rem; font-weight: bold; color: #e67e22;">${trip.total_votes}</div>
+                    <div style="font-size: 0.8rem; color: #666;">🗳️ Votes</div>
+                  </div>
+                  <div style="text-align: center;">
+                    <div style="font-size: 1.4rem; font-weight: bold; color: #9b59b6;">${trip.total_comments}</div>
+                    <div style="font-size: 0.8rem; color: #666;">💬 Comments</div>
+                  </div>
+                  <div style="text-align: center;">
+                    <div style="font-size: 1.2rem; font-weight: bold; color: ${trip.status === 'active' ? '#2ecc71' : '#95a5a6'};">
+                      ${trip.status === 'active' ? '✅' : '⏸️'}
+                    </div>
+                    <div style="font-size: 0.8rem; color: #666;">${trip.status === 'active' ? 'Active' : 'Inactive'}</div>
+                  </div>
+                </div>
+                
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                  <button onclick="viewCollaborativeTrip('${trip.trip_id}')" style="background: #3498db; color: white; border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer; font-size: 0.9rem; flex: 1; min-width: 120px;">
+                    🔍 View Trip
+                  </button>
+                  <button onclick="openOrganizerDashboard('${trip.trip_id}')" style="background: #2ecc71; color: white; border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer; font-size: 0.9rem; flex: 1; min-width: 140px;">
+                    📊 Dashboard
+                  </button>
+                  <button onclick="copyShareCode('${trip.share_code}')" style="background: #9b59b6; color: white; border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer; font-size: 0.9rem;">
+                    📋 Copy Code
+                  </button>
+                </div>
+              </div>
+            `).join('');
+          } else {
+            container.innerHTML = `
+              <div style="text-align: center; padding: 30px; color: #7f8c8d;">
+                <div style="font-size: 3rem; margin-bottom: 15px;">🤝</div>
+                <p style="font-size: 1.1rem; margin-bottom: 10px;">No collaborative trips yet!</p>
+                <p style="font-size: 0.9rem; line-height: 1.6;">
+                  Create a trip and share it with friends to see collaboration features.<br>
+                  Your collaborative trips will appear here with real-time activity updates.
+                </p>
+              </div>
+            `;
+          }
+        } catch (error) {
+          console.error('Error loading collaborative trips:', error);
+          document.getElementById('collaborative-trips-container').innerHTML = '<p style="color: #e74c3c; text-align: center;">Failed to load collaborative trips</p>';
+        }
+      }
+
+      // 🤝 Collaborative Trip Helper Functions
+      function viewCollaborativeTrip(tripId) {
+        window.location.href = `/collaborative-trip/${tripId}`;
+      }
+
+      function openOrganizerDashboard(tripId) {
+        window.location.href = `/dashboard/collaborative/${tripId}`;
+      }
+
+      function copyShareCode(shareCode) {
+        navigator.clipboard.writeText(shareCode).then(() => {
+          // Show temporary feedback
+          const button = event.target;
+          const originalText = button.innerHTML;
+          button.innerHTML = '✅ Copied!';
+          button.style.background = '#2ecc71';
+          
+          setTimeout(() => {
+            button.innerHTML = originalText;
+            button.style.background = '#9b59b6';
+          }, 2000);
+        }).catch(err => {
+          console.error('Failed to copy share code:', err);
+          alert(`Share Code: ${shareCode}\n\nCopy this code manually.`);
+        });
+      }
+
       async function deleteTrip(tripId) {
         try {
           // Confirm with user
@@ -755,7 +998,10 @@
       }
 
       // Load saved trips when page loads
-      document.addEventListener('DOMContentLoaded', loadSavedTrips);
+      document.addEventListener('DOMContentLoaded', function() {
+        loadSavedTrips();
+        loadCollaborativeTrips();
+      });
 
       // 🚀 Demo Trip Functions
       function loadDemoTrip(tripId) {
@@ -1232,5 +1478,47 @@
       defer
     ></script>
     <script src="{{ url_for('static', filename='js/map.js') }}"></script>
+    
+    <!-- Collaborative Trip Planning JavaScript -->
+    <script>
+      function joinCollaborativeTrip() {
+        const codeInput = document.getElementById('collaborativeCode');
+        const feedback = document.getElementById('collaborative-feedback');
+        const shareCode = codeInput.value.trim().toUpperCase();
+        
+        if (!shareCode) {
+          feedback.style.color = '#ffeb3b';
+          feedback.textContent = '⚠️ Please enter a share code';
+          setTimeout(() => feedback.textContent = '', 3000);
+          return;
+        }
+        
+        if (shareCode.length !== 6) {
+          feedback.style.color = '#ffeb3b';
+          feedback.textContent = '⚠️ Share code must be 6 characters';
+          setTimeout(() => feedback.textContent = '', 3000);
+          return;
+        }
+        
+        feedback.style.color = '#fff';
+        feedback.textContent = '🔄 Joining trip...';
+        
+        // Redirect to collaborative trip page
+        window.location.href = `/collaborate/${shareCode}`;
+      }
+      
+      // Allow Enter key to join trip
+      document.getElementById('collaborativeCode').addEventListener('keypress', function(event) {
+        if (event.key === 'Enter') {
+          joinCollaborativeTrip();
+        }
+      });
+      
+      // Auto-format share code input
+      document.getElementById('collaborativeCode').addEventListener('input', function(event) {
+        let value = event.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+        event.target.value = value;
+      });
+    </script>
   </body>
 </html>
