@@ -397,3 +397,41 @@ class CollaborativeTripManager:
             'loves': loves,
             'score': round(score, 2)
         }
+    
+    def get_trip_by_share_code(self, share_code):
+        """Get trip data using share code"""
+        try:
+            if not self.firestore_db and not hasattr(self, 'memory_store'):
+                return None
+            
+            # Find trip by share code
+            if self.firestore_db:
+                share_ref = self.firestore_db.collection('share_codes').document(share_code)
+                share_doc = share_ref.get()
+                if not share_doc.exists:
+                    return None
+                share_data = share_doc.to_dict()
+                trip_id = share_data['trip_id']
+                
+                # Get trip data
+                trip_ref = self.firestore_db.collection('collaborative_trips').document(trip_id)
+                trip_doc = trip_ref.get()
+                if not trip_doc.exists:
+                    return None
+                trip_data = trip_doc.to_dict()
+                trip_data['trip_id'] = trip_id
+                return trip_data
+            else:
+                # Use memory storage
+                share_data = self.memory_store.get(f"share_{share_code}")
+                if not share_data:
+                    return None
+                trip_id = share_data['trip_id']
+                trip_data = self.memory_store.get(trip_id)
+                if trip_data:
+                    trip_data['trip_id'] = trip_id
+                return trip_data
+                
+        except Exception as e:
+            print(f"❌ Error getting trip by share code: {e}")
+            return None

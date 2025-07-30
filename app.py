@@ -2808,23 +2808,15 @@ def collaborate_page(share_code):
             return render_template('error.html', 
                                  error="Collaborative features not available")
         
-        # Find trip by share code using Firestore
-        from firebase_admin import firestore
-        db = firestore.client()
-        share_ref = db.collection('share_codes').document(share_code)
-        share_doc = share_ref.get()
-        
-        if not share_doc.exists:
-            return render_template('error.html', 
-                                 error="Invalid share code")
-        
-        share_data = share_doc.to_dict()
-        trip_id = share_data['trip_id']
-        trip_data = collaborative_manager.get_collaborative_trip(trip_id)
+        # Find trip by share code using collaborative_manager
+        trip_data = collaborative_manager.get_trip_by_share_code(share_code)
         
         if not trip_data:
             return render_template('error.html', 
-                                 error="Trip not found")
+                                 error="Invalid share code or trip not found")
+        
+        # Extract trip_id from trip_data
+        trip_id = trip_data.get('trip_id') or trip_data.get('id')
         
         return render_template('collaborative_trip.html', 
                              trip_data=trip_data, 
@@ -3317,6 +3309,6 @@ def get_consensus_level(vote_counts, total_votes):
 
 # Main application runner
 if __name__ == "__main__":
-    print("🚀 Starting WanderWhiz on http://localhost:5000")
+    print("🚀 Starting WanderWhiz on http://localhost:5002")
     print("🤝 Collaborative features available!")
-    app.run(debug=True, port=5000, host='0.0.0.0')
+    app.run(debug=True, port=5002, host='0.0.0.0')

@@ -7,6 +7,24 @@
 [![Python](https://img.shields.io/badge/Python-3.13-green?style=for-the-badge&logo=python)](https://python.org)
 [![Flask](https://img.shields.io/badge/Flask-Web%20Framework-lightgrey?style=for-the-badge&logo=flask)](https://flask.palletsprojects.com)
 
+## 🚀 About the Project
+
+### **The Inspiration**
+
+Planning a graduation trip with friends became chaos: endless group chats, conflicting preferences, generic recommendations. Existing travel apps gave everyone the same "Top 10" lists and had zero collaborative features.
+
+**WanderWhiz solves this**: AI that learns YOUR personality + real-time group planning with voting and comments.
+
+### **What it does**
+
+WanderWhiz transforms travel planning through two breakthrough innovations:
+
+**🧠 AI Personality Learning**: Unlike generic travel apps, WanderWhiz studies your choices, preferences, and selections to build a unique travel personality profile. The more you use it, the smarter it gets - recommending hidden gems that match YOUR style, not everyone else's.
+
+**🤝 Real-Time Collaborative Planning**: Create shareable trips with 6-digit codes, invite friends to vote on destinations (Love/Like/Meh/Dislike), comment on specific places, and track all activity through an organizer dashboard. No more endless group chats - just democratic, organized trip planning.
+
+**🗺️ Intelligent Trip Building**: Combines Google Maps, Places, and Routes APIs with AI-powered recommendations to create optimized itineraries that minimize travel time and maximize experiences based on your group's collective preferences.
+
 ## 🏆 Award-Winning Features
 
 ### 🧠 **Feature #1: AI Personality Learning System**
