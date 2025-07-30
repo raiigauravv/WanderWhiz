@@ -96,10 +96,17 @@ collaborative_manager = None
 if firebase_enabled:
     try:
         firebase_manager = get_firebase_manager()
-        collaborative_manager = CollaborativeTripManager(firebase_manager)
-        print("🤝 Collaborative Trip Manager initialized!")
+        if firebase_manager:
+            collaborative_manager = CollaborativeTripManager(firebase_manager)
+            print("🤝 Collaborative Trip Manager initialized!")
+        else:
+            print("⚠️ Firebase manager is None, collaborative features disabled")
     except Exception as e:
         print(f"⚠️ Could not initialize collaborative manager: {e}")
+        import traceback
+        traceback.print_exc()
+else:
+    print("⚠️ Firebase not enabled, collaborative features disabled")
 
 # =============================================================================
 # AI PERSONALITY LEARNING SYSTEM
@@ -2723,7 +2730,9 @@ def join_trip():
             
     except Exception as e:
         print(f"❌ Error joining trip: {e}")
-        return jsonify({'error': str(e)}), 500
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': f'Internal server error: {str(e)}'}), 500
 
 @app.route('/api/collaborative-trip/<trip_id>')
 def get_collaborative_trip(trip_id):
@@ -3309,6 +3318,8 @@ def get_consensus_level(vote_counts, total_votes):
 
 # Main application runner
 if __name__ == "__main__":
-    print("🚀 Starting WanderWhiz on http://localhost:5002")
+    # Get port from environment variable or default to 5002 for local development
+    port = int(os.getenv("PORT", 5002))
+    print(f"🚀 Starting WanderWhiz on port {port}")
     print("🤝 Collaborative features available!")
-    app.run(debug=True, port=5002, host='0.0.0.0')
+    app.run(debug=False, port=port, host='0.0.0.0')
