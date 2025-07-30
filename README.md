@@ -43,41 +43,9 @@ WanderWhiz is an intelligent travel planning web application that creates person
 
 ## 🏗️ System Architecture
 
-### Updated Architecture (July 2025)
 ```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Frontend      │    │   Flask API     │    │   External APIs │
-│                 │    │                 │    │                 │
-│ • HTML/CSS/JS   │◄──►│ • Route Handlers│◄──►│ • OpenAI GPT-4  │
-│ • Google Maps   │    │ • Data Processing│    │ • Google Places │
-│ • Interactive UI│    │ • Budget Logic  │    │ • Google Routes │
-│ • Budget Display│    │ • PDF Generation│    │ • Geocoding     │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-                                │
-                                ▼
-                       ┌─────────────────┐
-                       │   Data Storage  │
-                       │                 │
-                       │ • Firebase      │
-                       │   Firestore     │
-                       │ • Budget Data   │
-                       │ • Trip History  │
-                       └─────────────────┘
-```
-
-### Technical Stack Improvements
-
-#### Backend Enhancements
-- **Enhanced Budget System**: Corruption-resistant budget validation
-- **Robust Data Cleaning**: Deep data sanitization for reliability  
-- **Improved Error Handling**: Graceful degradation and recovery
-- **PDF City Names**: Fixed address-to-city extraction for exports
-
-#### Frontend Improvements  
-- **Budget Persistence**: Values maintained across page reloads
-- **Streamlined UI**: Removed unnecessary elements like Clear Trip button
-- **Enhanced Validation**: Frontend budget data validation
-- **Better UX**: Improved loading states and user feedback
+    ┌─────────────────────────────────────────────────────────────────────┐
+    │                          🌟 WanderWhiz System                       │
     │                               │                                     │
     │                               ▼                                     │
     │  ┌─────────────────────────────────────────────────────────────┐    │
@@ -110,6 +78,20 @@ WanderWhiz is an intelligent travel planning web application that creates person
     └─────────────────────────────────────────────────────────────────────┘
 ```
 
+### 🔧 Technical Stack Improvements
+
+#### Backend Enhancements
+- **Enhanced Budget System**: Corruption-resistant budget validation
+- **Robust Data Cleaning**: Deep data sanitization for reliability  
+- **Improved Error Handling**: Graceful degradation and recovery
+- **PDF City Names**: Fixed address-to-city extraction for exports
+
+#### Frontend Improvements  
+- **Budget Persistence**: Values maintained across page reloads
+- **Streamlined UI**: Removed unnecessary elements like Clear Trip button
+- **Enhanced Validation**: Frontend budget data validation
+- **Better UX**: Improved loading states and user feedback
+
 ### 🔄 Data Flow Process
 1. **👤 User Input** → Natural language travel request via web interface
 2. **🧠 AI Processing** → OpenAI GPT-4 extracts city, interests, and preferences  
@@ -125,68 +107,6 @@ WanderWhiz is an intelligent travel planning web application that creates person
 | **Response Time** | 15+ seconds | **0.94 seconds** | **94% faster** |
 | **Database Calls** | Multiple connections | Singleton pattern | **Optimized** |
 | **Mobile Performance** | Basic | Touch-optimized | **Enhanced** |
-
-### 📊 Technical Architecture Diagram
-
-```mermaid
-graph TB
-    subgraph "🖥️ Frontend Layer"
-        A[📱 HTML5/CSS3] 
-        B[⚡ JavaScript ES6+]
-        C[🗺️ Google Maps JS API]
-    end
-    
-    subgraph "⚙️ Backend Services"  
-        D[🐍 Flask Application]
-        E[🔧 Route Processing]
-        F[🔐 Session Management]
-    end
-    
-    subgraph "🤖 AI Services"
-        G[🧠 OpenAI GPT-4]
-        H[🎯 Natural Language Processing]
-    end
-    
-    subgraph "🌍 Google APIs"
-        I[📍 Places API]
-        J[🛣️ Routes API] 
-        K[🌐 Geocoding API]
-    end
-    
-    subgraph "💾 Database"
-        L[🔥 Firebase Firestore]
-        M[📊 Trip Storage]
-    end
-    
-    %% User Flow
-    N[👤 User] --> A
-    A --> D
-    B --> D
-    C --> D
-    D --> G
-    D --> I
-    D --> J
-    D --> K
-    G --> H
-    I --> E
-    J --> E
-    K --> E
-    D --> L
-    L --> M
-    
-    %% Styling
-    classDef frontend fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
-    classDef backend fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
-    classDef ai fill:#fff3e0,stroke:#f57c00,stroke-width:2px
-    classDef google fill:#e8f5e8,stroke:#388e3c,stroke-width:2px
-    classDef database fill:#fce4ec,stroke:#c2185b,stroke-width:2px
-    
-    class A,B,C frontend
-    class D,E,F backend
-    class G,H ai
-    class I,J,K google
-    class L,M database
-```
 
 ## 🛠️ Technology Stack
 
