@@ -25,18 +25,40 @@ class FirebaseManager:
             print("🔥 Firebase already initialized, reusing connection")
         except ValueError:
             # Initialize Firebase
-            cred_path = os.path.join(os.path.dirname(__file__), 'firebase-key.json')
-            if os.path.exists(cred_path):
-                cred = credentials.Certificate(cred_path)
-                firebase_admin.initialize_app(cred)
-                print("🔥 Firebase initialized successfully!")
-            else:
-                print("⚠️ Firebase key not found. Please add firebase-key.json")
-                return
+            self._initialize_firebase()
         
         # Get Firestore client
         self.db = firestore.client()
         self._initialized = True
+    
+    def _initialize_firebase(self):
+        """Initialize Firebase with environment variables or local file"""
+        try:
+            # Try to use environment variables first (for Vercel/production)
+            firebase_config = os.getenv('FIREBASE_CONFIG')
+            if firebase_config:
+                # Parse the JSON string from environment variable
+                cred_dict = json.loads(firebase_config)
+                cred = credentials.Certificate(cred_dict)
+                firebase_admin.initialize_app(cred)
+                print("🔥 Firebase initialized with environment variables!")
+                return
+        except Exception as e:
+            print(f"⚠️ Could not initialize with environment variables: {e}")
+        
+        # Fallback to local file (for development)
+        try:
+            cred_path = os.path.join(os.path.dirname(__file__), 'firebase-key.json')
+            if os.path.exists(cred_path):
+                cred = credentials.Certificate(cred_path)
+                firebase_admin.initialize_app(cred)
+                print("🔥 Firebase initialized with local file!")
+                return
+        except Exception as e:
+            print(f"⚠️ Could not initialize with local file: {e}")
+        
+        print("❌ Firebase initialization failed. Please check your configuration.")
+        return
 
     def save_itinerary(self, user_id, itinerary_data):
         """Save itinerary to Firestore"""
