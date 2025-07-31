@@ -13,14 +13,7 @@
         }
 
         body {
-            font-family: '                                <div class="add-comment">
-                                    <input type="text" class="comment-input" placeholder="Add a comment..." 
-                                           id="comment-input-{{ place.place_id or loop.index }}"
-                                           onkeypress="handleCommentKeyPress(event, '{{ place.place_id or loop.index }}')">
-                                    <button class="submit-comment" onclick="addComment('{{ place.place_id or loop.index }}')">
-                                        <i class="fas fa-paper-plane"></i>
-                                    </button>
-                                </div>I', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             color: #333;
