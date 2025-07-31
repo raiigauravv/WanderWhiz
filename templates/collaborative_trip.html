@@ -90,31 +90,162 @@
         }
 
         .main-content {
-            display: grid;
-            grid-template-columns: 2fr 1fr;
-            gap: 30px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
             margin-bottom: 30px;
+            overflow: hidden;
+        }
+
+        .tabs-container {
+            border-bottom: 2px solid #f1f2f6;
+        }
+
+        .tabs {
+            display: flex;
+            background: #f8f9fa;
+            margin: 0;
+            padding: 0;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            border: none;
+            background: transparent;
+            color: #7f8c8d;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .tab:hover {
+            background: rgba(52, 152, 219, 0.1);
+            color: #3498db;
+        }
+
+        .tab.active {
+            background: #fff;
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+        }
+
+        .tab i {
+            margin-right: 8px;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 30px;
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .tab-content::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .tab-content::-webkit-scrollbar-track {
+            background: #f1f2f6;
+            border-radius: 4px;
+        }
+
+        .tab-content::-webkit-scrollbar-thumb {
+            background: #bdc3c7;
+            border-radius: 4px;
+        }
+
+        .tab-content::-webkit-scrollbar-thumb:hover {
+            background: #95a5a6;
         }
 
         .places-section {
-            background: rgba(255, 255, 255, 0.95);
+            background: transparent;
             border-radius: 15px;
             padding: 25px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
         }
 
         .place-card {
-            background: #f8f9fa;
+            background: #fff;
             border-radius: 12px;
             padding: 20px;
             margin-bottom: 20px;
             border-left: 4px solid #3498db;
             transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+            border: 1px solid #ecf0f1;
         }
 
         .place-card:hover {
             transform: translateY(-2px);
-            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+        }
+
+        .place-interaction-card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+            border: 1px solid #ecf0f1;
+            border-left: 4px solid #e74c3c;
+        }
+
+        .place-interaction-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f8f9fa;
+        }
+
+        .place-interaction-header h4 {
+            color: #2c3e50;
+            margin: 0;
+            font-size: 1.2em;
+        }
+
+        .place-interaction-header h4 i {
+            color: #e74c3c;
+            margin-right: 8px;
+        }
+
+        .interaction-stats {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .vote-summary {
+            background: #f8f9fa;
+            padding: 8px 15px;
+            border-radius: 20px;
+            color: #7f8c8d;
+            font-size: 0.9em;
+            font-weight: 600;
+        }
+
+        .share-activity-section {
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+
+        .interactions-section h3 {
+            margin-bottom: 25px;
+            color: #2c3e50;
+            font-size: 1.4em;
+            text-align: center;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f1f2f6;
         }
 
         .place-header {
@@ -465,93 +596,137 @@
             </div>
 
             <div class="main-content">
-                <div class="places-section">
-                    <h3><i class="fas fa-map-pin"></i> Places to Visit</h3>
-                    <div id="placesList">
-                        {% if trip_data.trip_data.places %}
-                        {% for place in trip_data.trip_data.places %}
-                        <div class="place-card" data-place-id="{{ place.place_id or loop.index }}">
-                            <div class="place-header">
-                                <div>
-                                    <div class="place-title">{{ place.name }}</div>
-                                    <div class="place-rating">
-                                        {% for i in range(5) %}
-                                        <i class="fas fa-star {{ 'active' if place.rating and i < place.rating else '' }}"></i>
-                                        {% endfor %}
-                                        <span>{{ place.rating or 'N/A' }}</span>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <p>{{ place.vicinity or place.address or 'Location details not available' }}</p>
-                            
-                            <div class="voting-section">
-                                <button class="vote-btn love" onclick="votePlace('{{ place.place_id or loop.index }}', 'love')">
-                                    <i class="fas fa-heart"></i> Love
-                                </button>
-                                <button class="vote-btn like" onclick="votePlace('{{ place.place_id or loop.index }}', 'like')">
-                                    <i class="fas fa-thumbs-up"></i> Like
-                                </button>
-                                <button class="vote-btn dislike" onclick="votePlace('{{ place.place_id or loop.index }}', 'dislike')">
-                                    <i class="fas fa-thumbs-down"></i> Pass
-                                </button>
-                                
-                                <div class="vote-count" id="votes-{{ place.place_id or loop.index }}">
-                                    <i class="fas fa-poll"></i> 0 votes
-                                </div>
-                            </div>
-
-                            <div class="comments-section">
-                                <div class="comments-list" id="comments-{{ place.place_id or loop.index }}">
-                                    <!-- Comments loaded dynamically -->
-                                </div>
-                                <div class="add-comment">
-                                    <input type="text" class="comment-input" placeholder="Add a comment..." 
-                                           id="comment-input-{{ place.place_id or loop.index }}">
-                                    <button class="submit-comment" onclick="addComment('{{ place.place_id or loop.index }}')">
-                                        <i class="fas fa-paper-plane"></i>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                        {% endfor %}
-                        {% else %}
-                        <p>No places added yet. Start planning your trip!</p>
-                        {% endif %}
+                <div class="tabs-container">
+                    <div class="tabs">
+                        <button class="tab active" onclick="showTab('places')">
+                            <i class="fas fa-map-pin"></i> Places to Visit
+                        </button>
+                        <button class="tab" onclick="showTab('interactions')">
+                            <i class="fas fa-comments"></i> Interactions
+                        </button>
+                        <button class="tab" onclick="showTab('share')">
+                            <i class="fas fa-share"></i> Share & Activity
+                        </button>
                     </div>
                 </div>
 
-                <div class="sidebar">
-                    <div class="card share-section">
-                        <h3><i class="fas fa-share"></i> Share Trip</h3>
-                        <p>Share this code with friends:</p>
-                        <div class="share-code">{{ share_code }}</div>
-                        <div class="share-actions">
-                            <button class="btn btn-primary" onclick="copyShareCode()">
-                                <i class="fas fa-copy"></i> Copy Code
-                            </button>
-                            <button class="btn btn-success" onclick="shareLink()">
-                                <i class="fas fa-link"></i> Share Link
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="card">
-                        <h3><i class="fas fa-bell"></i> Recent Activity</h3>
-                        <div class="activity-feed" id="activityFeed">
-                            {% if trip_data.notifications %}
-                            {% for notification_id, notification in trip_data.notifications.items() %}
-                            <div class="activity-item">
-                                <strong>{{ notification.user }}</strong> {{ notification.action }}
-                                <div class="activity-time">{{ notification.timestamp[:19] if notification.timestamp else 'Just now' }}</div>
+                <!-- Places Tab -->
+                <div id="places-tab" class="tab-content active">
+                    <div class="places-section">
+                        <div id="placesList">
+                            {% if trip_data.trip_data.places %}
+                            {% for place in trip_data.trip_data.places %}
+                            <div class="place-card" data-place-id="{{ place.place_id or loop.index }}">
+                                <div class="place-header">
+                                    <div>
+                                        <div class="place-title">{{ place.name }}</div>
+                                        <div class="place-rating">
+                                            {% for i in range(5) %}
+                                            <i class="fas fa-star {{ 'active' if place.rating and i < place.rating else '' }}"></i>
+                                            {% endfor %}
+                                            <span>{{ place.rating or 'N/A' }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <p>{{ place.vicinity or place.address or 'Location details not available' }}</p>
+                                
+                                <div class="voting-section">
+                                    <button class="vote-btn love" onclick="votePlace('{{ place.place_id or loop.index }}', 'love')">
+                                        <i class="fas fa-heart"></i> Love
+                                    </button>
+                                    <button class="vote-btn like" onclick="votePlace('{{ place.place_id or loop.index }}', 'like')">
+                                        <i class="fas fa-thumbs-up"></i> Like
+                                    </button>
+                                    <button class="vote-btn dislike" onclick="votePlace('{{ place.place_id or loop.index }}', 'dislike')">
+                                        <i class="fas fa-thumbs-down"></i> Pass
+                                    </button>
+                                    
+                                    <div class="vote-count" id="votes-{{ place.place_id or loop.index }}">
+                                        <i class="fas fa-poll"></i> 0 votes
+                                    </div>
+                                </div>
                             </div>
                             {% endfor %}
                             {% else %}
-                            <div class="activity-item">
-                                Trip created by {{ trip_data.creator }}
-                                <div class="activity-time">{{ trip_data.created_at[:19] if trip_data.created_at else 'Recently' }}</div>
-                            </div>
+                            <p>No places added yet. Start planning your trip!</p>
                             {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Interactions Tab -->
+                <div id="interactions-tab" class="tab-content">
+                    <div class="interactions-section">
+                        <h3><i class="fas fa-comments"></i> All Comments & Discussions</h3>
+                        <div id="allCommentsList">
+                            {% if trip_data.trip_data.places %}
+                            {% for place in trip_data.trip_data.places %}
+                            <div class="place-interaction-card" data-place-id="{{ place.place_id or loop.index }}">
+                                <div class="place-interaction-header">
+                                    <h4><i class="fas fa-map-marker-alt"></i> {{ place.name }}</h4>
+                                    <div class="interaction-stats">
+                                        <span class="vote-summary" id="vote-summary-{{ place.place_id or loop.index }}">
+                                            <i class="fas fa-poll"></i> 0 votes
+                                        </span>
+                                    </div>
+                                </div>
+                                
+                                <div class="comments-section">
+                                    <div class="comments-list" id="comments-{{ place.place_id or loop.index }}">
+                                        <!-- Comments loaded dynamically -->
+                                    </div>
+                                    <div class="add-comment">
+                                        <input type="text" class="comment-input" placeholder="Add a comment about {{ place.name }}..." 
+                                               id="comment-input-{{ place.place_id or loop.index }}">
+                                        <button class="submit-comment" onclick="addComment('{{ place.place_id or loop.index }}')">
+                                            <i class="fas fa-paper-plane"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                            {% else %}
+                            <p>No places added yet. Start planning your trip to see interactions!</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Share & Activity Tab -->
+                <div id="share-tab" class="tab-content">
+                    <div class="share-activity-section">
+                        <div class="card share-section">
+                            <h3><i class="fas fa-share"></i> Share Trip</h3>
+                            <p>Share this code with friends:</p>
+                            <div class="share-code">{{ share_code }}</div>
+                            <div class="share-actions">
+                                <button class="btn btn-primary" onclick="copyShareCode()">
+                                    <i class="fas fa-copy"></i> Copy Code
+                                </button>
+                                <button class="btn btn-success" onclick="shareLink()">
+                                    <i class="fas fa-link"></i> Share Link
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <h3><i class="fas fa-bell"></i> Recent Activity</h3>
+                            <div class="activity-feed" id="activityFeed">
+                                {% if trip_data.notifications %}
+                                {% for notification_id, notification in trip_data.notifications.items() %}
+                                <div class="activity-item">
+                                    <strong>{{ notification.user }}</strong> {{ notification.action }}
+                                    <div class="activity-time">{{ notification.timestamp[:19] if notification.timestamp else 'Just now' }}</div>
+                                </div>
+                                {% endfor %}
+                                {% else %}
+                                <div class="activity-item">
+                                    Trip created by {{ trip_data.creator }}
+                                    <div class="activity-time">{{ trip_data.created_at[:19] if trip_data.created_at else 'Recently' }}</div>
+                                </div>
+                                {% endif %}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -679,12 +854,20 @@
                 const summary = voteData.summary || {total: 0, likes: 0, loves: 0};
                 
                 const voteElement = document.getElementById(`votes-${placeId}`);
+                const voteSummaryElement = document.getElementById(`vote-summary-${placeId}`);
+                
+                const voteHTML = `
+                    <i class="fas fa-poll"></i> 
+                    ${summary.total} votes 
+                    (❤️${summary.loves} 👍${summary.likes})
+                `;
+                
                 if (voteElement) {
-                    voteElement.innerHTML = `
-                        <i class="fas fa-poll"></i> 
-                        ${summary.total} votes 
-                        (❤️${summary.loves} 👍${summary.likes})
-                    `;
+                    voteElement.innerHTML = voteHTML;
+                }
+                
+                if (voteSummaryElement) {
+                    voteSummaryElement.innerHTML = voteHTML;
                 }
             });
         }
@@ -847,6 +1030,43 @@
             })
             .finally(() => {
                 input.disabled = false;
+            });
+        }
+
+        function showTab(tabName) {
+            // Hide all tab contents
+            const tabContents = document.querySelectorAll('.tab-content');
+            tabContents.forEach(content => {
+                content.classList.remove('active');
+            });
+
+            // Remove active class from all tabs
+            const tabs = document.querySelectorAll('.tab');
+            tabs.forEach(tab => {
+                tab.classList.remove('active');
+            });
+
+            // Show selected tab content
+            document.getElementById(tabName + '-tab').classList.add('active');
+
+            // Add active class to clicked tab
+            event.target.classList.add('active');
+
+            // If switching to interactions tab, update vote summaries
+            if (tabName === 'interactions') {
+                updateInteractionsSummary();
+            }
+        }
+
+        function updateInteractionsSummary() {
+            // Update vote summaries in interactions tab
+            const voteCounts = document.querySelectorAll('[id^="votes-"]');
+            voteCounts.forEach(voteElement => {
+                const placeId = voteElement.id.replace('votes-', '');
+                const summaryElement = document.getElementById('vote-summary-' + placeId);
+                if (summaryElement && voteElement) {
+                    summaryElement.innerHTML = voteElement.innerHTML;
+                }
             });
         }
 
