@@ -542,7 +542,7 @@
       </div>
     </div>
 
-    <!-- 🤝 Enhanced Collaborative Trips Section -->
+    <!-- 🤝 Enhanced Collaborative Trips Section with Tabs -->
     <div
       class="collaborative-trips-section"
       style="
@@ -571,6 +571,26 @@
       >
         🤝 Your Collaborative Trips
       </h3>
+      
+      <!-- Collaborative Trips Tabs -->
+      <div class="collab-tabs-container" style="margin-bottom: 25px;">
+        <div class="collab-tab-buttons" style="display: flex; background: #f8f9fa; border-radius: 12px; padding: 4px; gap: 2px;">
+          <button class="collab-tab-btn active" data-tab="all" style="flex: 1; padding: 12px 20px; background: #3498db; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.3s ease;">
+            📋 All Trips
+          </button>
+          <button class="collab-tab-btn" data-tab="active" style="flex: 1; padding: 12px 20px; background: transparent; color: #666; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.3s ease;">
+            ✅ Active
+          </button>
+          <button class="collab-tab-btn" data-tab="recent" style="flex: 1; padding: 12px 20px; background: transparent; color: #666; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.3s ease;">
+            🔥 Recent Activity
+          </button>
+          <button class="collab-tab-btn" data-tab="owned" style="flex: 1; padding: 12px 20px; background: transparent; color: #666; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.3s ease;">
+            👑 Owned by Me
+          </button>
+        </div>
+      </div>
+      
+      <!-- Tab Content -->
       <div id="collaborative-trips-container">
         <p style="color: #7f8c8d; text-align: center; font-size: 1.1rem">
           Loading your collaborative adventures...
@@ -854,82 +874,6 @@
         }
       }
 
-      // 🤝 Load Collaborative Trips
-      async function loadCollaborativeTrips() {
-        try {
-          const response = await fetch('/api/my-collaborative-trips');
-          const data = await response.json();
-
-          const container = document.getElementById('collaborative-trips-container');
-
-          if (data.success && data.trips && data.trips.length > 0) {
-            container.innerHTML = data.trips.map(trip => `
-              <div class="collaborative-trip-card" style="background: white; padding: 20px; margin: 15px 0; border-radius: 12px; border: 1px solid #ddd; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px;">
-                  <div style="flex: 1;">
-                    <h4 style="margin: 0 0 8px 0; color: #2c3e50; font-size: 1.2rem;">${trip.destination || 'Unknown Destination'}</h4>
-                    <p style="margin: 0 0 5px 0; color: #666; font-size: 0.9rem;">
-                      🔗 Share Code: <strong style="color: #3498db;">${trip.share_code}</strong>
-                    </p>
-                    <p style="margin: 0; color: #7f8c8d; font-size: 0.85rem;">
-                      Created ${trip.created_at ? new Date(trip.created_at).toLocaleDateString() : 'Recently'}
-                    </p>
-                  </div>
-                  ${trip.has_activity ? '<div style="background: #e74c3c; color: white; padding: 4px 8px; border-radius: 12px; font-size: 0.8rem; white-space: nowrap;">🔔 New Activity</div>' : ''}
-                </div>
-                
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 15px; margin-bottom: 15px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
-                  <div style="text-align: center;">
-                    <div style="font-size: 1.4rem; font-weight: bold; color: #3498db;">${trip.participants_count}</div>
-                    <div style="font-size: 0.8rem; color: #666;">👥 Participants</div>
-                  </div>
-                  <div style="text-align: center;">
-                    <div style="font-size: 1.4rem; font-weight: bold; color: #e67e22;">${trip.total_votes}</div>
-                    <div style="font-size: 0.8rem; color: #666;">🗳️ Votes</div>
-                  </div>
-                  <div style="text-align: center;">
-                    <div style="font-size: 1.4rem; font-weight: bold; color: #9b59b6;">${trip.total_comments}</div>
-                    <div style="font-size: 0.8rem; color: #666;">💬 Comments</div>
-                  </div>
-                  <div style="text-align: center;">
-                    <div style="font-size: 1.2rem; font-weight: bold; color: ${trip.status === 'active' ? '#2ecc71' : '#95a5a6'};">
-                      ${trip.status === 'active' ? '✅' : '⏸️'}
-                    </div>
-                    <div style="font-size: 0.8rem; color: #666;">${trip.status === 'active' ? 'Active' : 'Inactive'}</div>
-                  </div>
-                </div>
-                
-                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                  <button onclick="viewCollaborativeTrip('${trip.trip_id}')" style="background: #3498db; color: white; border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer; font-size: 0.9rem; flex: 1; min-width: 120px;">
-                    🔍 View Trip
-                  </button>
-                  <button onclick="openOrganizerDashboard('${trip.trip_id}')" style="background: #2ecc71; color: white; border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer; font-size: 0.9rem; flex: 1; min-width: 140px;">
-                    📊 Dashboard
-                  </button>
-                  <button onclick="copyShareCode('${trip.share_code}')" style="background: #9b59b6; color: white; border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer; font-size: 0.9rem;">
-                    📋 Copy Code
-                  </button>
-                </div>
-              </div>
-            `).join('');
-          } else {
-            container.innerHTML = `
-              <div style="text-align: center; padding: 30px; color: #7f8c8d;">
-                <div style="font-size: 3rem; margin-bottom: 15px;">🤝</div>
-                <p style="font-size: 1.1rem; margin-bottom: 10px;">No collaborative trips yet!</p>
-                <p style="font-size: 0.9rem; line-height: 1.6;">
-                  Create a trip and share it with friends to see collaboration features.<br>
-                  Your collaborative trips will appear here with real-time activity updates.
-                </p>
-              </div>
-            `;
-          }
-        } catch (error) {
-          console.error('Error loading collaborative trips:', error);
-          document.getElementById('collaborative-trips-container').innerHTML = '<p style="color: #e74c3c; text-align: center;">Failed to load collaborative trips</p>';
-        }
-      }
-
       // 🤝 Collaborative Trip Helper Functions
       function viewCollaborativeTrip(tripId) {
         window.location.href = `/collaborative-trip/${tripId}`;
@@ -955,6 +899,249 @@
           console.error('Failed to copy share code:', err);
           alert(`Share Code: ${shareCode}\n\nCopy this code manually.`);
         });
+      }
+
+      // 🎯 Collaborative Trips Tab Management
+      let allCollaborativeTrips = []; // Store all trips for filtering
+      let currentCollabTab = 'all';
+
+      function initializeCollabTabs() {
+        // Add click handlers for tab buttons
+        document.querySelectorAll('.collab-tab-btn').forEach(btn => {
+          btn.addEventListener('click', function() {
+            const tabName = this.getAttribute('data-tab');
+            switchCollabTab(tabName);
+          });
+        });
+      }
+
+      function switchCollabTab(tabName) {
+        currentCollabTab = tabName;
+        
+        // Update button styles
+        document.querySelectorAll('.collab-tab-btn').forEach(btn => {
+          if (btn.getAttribute('data-tab') === tabName) {
+            btn.style.background = '#3498db';
+            btn.style.color = 'white';
+            btn.classList.add('active');
+          } else {
+            btn.style.background = 'transparent';
+            btn.style.color = '#666';
+            btn.classList.remove('active');
+          }
+        });
+
+        // Filter and display trips
+        displayFilteredTrips(tabName);
+      }
+
+      function displayFilteredTrips(filter) {
+        const container = document.getElementById('collaborative-trips-container');
+        let filteredTrips = [];
+
+        switch(filter) {
+          case 'all':
+            filteredTrips = allCollaborativeTrips;
+            break;
+          case 'active':
+            filteredTrips = allCollaborativeTrips.filter(trip => trip.status === 'active');
+            break;
+          case 'recent':
+            // Sort by recent activity (votes, comments, or creation date)
+            filteredTrips = allCollaborativeTrips
+              .filter(trip => trip.has_activity || trip.total_votes > 0 || trip.total_comments > 0)
+              .sort((a, b) => {
+                const aActivity = (a.total_votes || 0) + (a.total_comments || 0);
+                const bActivity = (b.total_votes || 0) + (b.total_comments || 0);
+                return bActivity - aActivity;
+              });
+            break;
+          case 'owned':
+            // Filter trips where current user is the owner
+            filteredTrips = allCollaborativeTrips.filter(trip => trip.is_owner);
+            break;
+          default:
+            filteredTrips = allCollaborativeTrips;
+        }
+
+        if (filteredTrips.length > 0) {
+          container.innerHTML = filteredTrips.map(trip => `
+            <div class="collaborative-trip-card" style="background: white; padding: 25px; margin: 20px 0; border-radius: 15px; border: 1px solid #ddd; box-shadow: 0 4px 12px rgba(0,0,0,0.1); transition: transform 0.2s ease, box-shadow 0.2s ease;" onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 8px 20px rgba(0,0,0,0.15)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.1)'">
+              
+              <!-- Trip Header -->
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #f8f9fa;">
+                <div style="flex: 1;">
+                  <h4 style="margin: 0 0 8px 0; color: #2c3e50; font-size: 1.4rem; font-weight: 700;">${trip.destination || 'Unknown Destination'}</h4>
+                  <p style="margin: 0 0 5px 0; color: #666; font-size: 0.95rem;">
+                    🔗 Share Code: <strong style="color: #3498db; font-family: monospace;">${trip.share_code}</strong>
+                  </p>
+                  <p style="margin: 0; color: #7f8c8d; font-size: 0.9rem;">
+                    📅 Created ${trip.created_at ? new Date(trip.created_at).toLocaleDateString() : 'Recently'}
+                  </p>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 8px; align-items: flex-end;">
+                  ${trip.has_activity ? '<div style="background: #e74c3c; color: white; padding: 6px 12px; border-radius: 15px; font-size: 0.8rem; white-space: nowrap; animation: pulse 2s infinite;">🔔 New Activity</div>' : ''}
+                  ${trip.is_owner ? '<div style="background: #f39c12; color: white; padding: 6px 12px; border-radius: 15px; font-size: 0.8rem; white-space: nowrap;">👑 Trip Owner</div>' : ''}
+                  <div style="background: ${trip.status === 'active' ? '#2ecc71' : '#95a5a6'}; color: white; padding: 6px 12px; border-radius: 15px; font-size: 0.8rem;">
+                    ${trip.status === 'active' ? '✅ Active' : '⏸️ Inactive'}
+                  </div>
+                </div>
+              </div>
+
+              <!-- Trip Stats Overview -->
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 15px; margin-bottom: 20px; padding: 20px; background: linear-gradient(135deg, #f8f9fa, #e9ecef); border-radius: 12px;">
+                <div style="text-align: center; padding: 10px;">
+                  <div style="font-size: 1.6rem; font-weight: bold; color: #3498db;">${trip.participants_count}</div>
+                  <div style="font-size: 0.85rem; color: #666; font-weight: 600;">👥 Participants</div>
+                </div>
+                <div style="text-align: center; padding: 10px;">
+                  <div style="font-size: 1.6rem; font-weight: bold; color: #e67e22;">${trip.total_votes}</div>
+                  <div style="font-size: 0.85rem; color: #666; font-weight: 600;">🗳️ Total Votes</div>
+                </div>
+                <div style="text-align: center; padding: 10px;">
+                  <div style="font-size: 1.6rem; font-weight: bold; color: #9b59b6;">${trip.total_comments}</div>
+                  <div style="font-size: 0.85rem; color: #666; font-weight: 600;">💬 Comments</div>
+                </div>
+                <div style="text-align: center; padding: 10px;">
+                  <div style="font-size: 1.6rem; font-weight: bold; color: #27ae60;">${trip.places_count || 0}</div>
+                  <div style="font-size: 0.85rem; color: #666; font-weight: 600;">📍 Places</div>
+                </div>
+              </div>
+
+              <!-- Interactions Inside Trip Card -->
+              <div class="trip-interactions" style="background: #f8f9fa; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+                <h5 style="margin: 0 0 15px 0; color: #2c3e50; font-size: 1.1rem; font-weight: 600; border-bottom: 2px solid #e9ecef; padding-bottom: 8px;">
+                  🎯 Trip Activity & Interactions
+                </h5>
+                
+                <!-- Activity Tabs for this trip -->
+                <div class="trip-activity-tabs" style="display: flex; background: white; border-radius: 8px; padding: 4px; margin-bottom: 15px; gap: 4px;">
+                  <button onclick="switchTripTab('${trip.trip_id}', 'participants')" class="trip-tab-btn active" data-trip="${trip.trip_id}" data-tab="participants" style="flex: 1; padding: 8px 12px; background: #3498db; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 600; transition: all 0.2s ease;">
+                    👥 Participants
+                  </button>
+                  <button onclick="switchTripTab('${trip.trip_id}', 'votes')" class="trip-tab-btn" data-trip="${trip.trip_id}" data-tab="votes" style="flex: 1; padding: 8px 12px; background: transparent; color: #666; border: none; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 600; transition: all 0.2s ease;">
+                    🗳️ Voting
+                  </button>
+                  <button onclick="switchTripTab('${trip.trip_id}', 'comments')" class="trip-tab-btn" data-trip="${trip.trip_id}" data-tab="comments" style="flex: 1; padding: 8px 12px; background: transparent; color: #666; border: none; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 600; transition: all 0.2s ease;">
+                    💬 Comments
+                  </button>
+                </div>
+
+                <!-- Activity Content for this trip -->
+                <div id="trip-content-${trip.trip_id}" style="min-height: 120px; background: white; border-radius: 8px; padding: 15px;">
+                  <div class="trip-tab-content active" data-tab="participants">
+                    <h6 style="margin: 0 0 10px 0; color: #3498db; font-size: 0.9rem; font-weight: 600;">Active Participants (${trip.participants_count})</h6>
+                    <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                      ${trip.participants ? trip.participants.map(p => `
+                        <div style="background: #e3f2fd; color: #1976d2; padding: 6px 12px; border-radius: 15px; font-size: 0.8rem; display: flex; align-items: center; gap: 4px;">
+                          ${p.role === 'owner' ? '👑' : '👤'} ${p.name}
+                        </div>
+                      `).join('') : '<p style="color: #7f8c8d; font-size: 0.85rem; margin: 0;">Loading participants...</p>'}
+                    </div>
+                  </div>
+                  
+                  <div class="trip-tab-content" data-tab="votes" style="display: none;">
+                    <h6 style="margin: 0 0 10px 0; color: #e67e22; font-size: 0.9rem; font-weight: 600;">Recent Voting Activity</h6>
+                    <div style="color: #7f8c8d; font-size: 0.85rem;">
+                      ${trip.total_votes > 0 ? `🗳️ ${trip.total_votes} votes cast across all places` : 'No votes yet - encourage participants to vote!'}
+                    </div>
+                  </div>
+                  
+                  <div class="trip-tab-content" data-tab="comments" style="display: none;">
+                    <h6 style="margin: 0 0 10px 0; color: #9b59b6; font-size: 0.9rem; font-weight: 600;">Latest Comments</h6>
+                    <div style="color: #7f8c8d; font-size: 0.85rem;">
+                      ${trip.total_comments > 0 ? `💬 ${trip.total_comments} comments posted` : 'No comments yet - start the conversation!'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Action Buttons -->
+              <div style="display: flex; gap: 12px; flex-wrap: wrap; justify-content: space-between;">
+                <div style="display: flex; gap: 10px; flex: 1;">
+                  <button onclick="viewCollaborativeTrip('${trip.trip_id}')" style="background: #3498db; color: white; border: none; padding: 12px 18px; border-radius: 8px; cursor: pointer; font-size: 0.9rem; font-weight: 600; flex: 1; min-width: 120px; transition: background 0.2s ease;" onmouseover="this.style.background='#2980b9'" onmouseout="this.style.background='#3498db'">
+                    🔍 View Trip
+                  </button>
+                  <button onclick="openOrganizerDashboard('${trip.trip_id}')" style="background: #2ecc71; color: white; border: none; padding: 12px 18px; border-radius: 8px; cursor: pointer; font-size: 0.9rem; font-weight: 600; flex: 1; min-width: 140px; transition: background 0.2s ease;" onmouseover="this.style.background='#27ae60'" onmouseout="this.style.background='#2ecc71'">
+                    📊 Dashboard
+                  </button>
+                </div>
+                <button onclick="copyShareCode('${trip.share_code}')" style="background: #9b59b6; color: white; border: none; padding: 12px 18px; border-radius: 8px; cursor: pointer; font-size: 0.9rem; font-weight: 600; min-width: 120px; transition: background 0.2s ease;" onmouseover="this.style.background='#8e44ad'" onmouseout="this.style.background='#9b59b6'">
+                  📋 Copy Code
+                </button>
+              </div>
+            </div>
+          `).join('');
+        } else {
+          const emptyMessages = {
+            'all': 'No collaborative trips yet!',
+            'active': 'No active collaborative trips!',
+            'recent': 'No recent activity in your trips!',
+            'owned': 'You haven\'t created any trips yet!'
+          };
+          
+          const emptyDescriptions = {
+            'all': 'Create a trip and share it with friends to see collaboration features.',
+            'active': 'Start a new trip or reactivate an existing one to see it here.',
+            'recent': 'When participants vote or comment, those trips will appear here.',
+            'owned': 'Create your first collaborative trip to get started!'
+          };
+
+          container.innerHTML = `
+            <div style="text-align: center; padding: 30px; color: #7f8c8d;">
+              <div style="font-size: 3rem; margin-bottom: 15px;">🤝</div>
+              <p style="font-size: 1.1rem; margin-bottom: 10px;">${emptyMessages[filter]}</p>
+              <p style="font-size: 0.9rem; line-height: 1.6;">
+                ${emptyDescriptions[filter]}
+              </p>
+            </div>
+          `;
+        }
+      }
+
+      // 🎯 Trip-specific tab switching (for interactions within each trip card)
+      function switchTripTab(tripId, tabName) {
+        // Update button styles for this specific trip
+        const tripButtons = document.querySelectorAll(`[data-trip="${tripId}"]`);
+        tripButtons.forEach(btn => {
+          if (btn.getAttribute('data-tab') === tabName) {
+            btn.style.background = '#3498db';
+            btn.style.color = 'white';
+          } else {
+            btn.style.background = 'transparent';
+            btn.style.color = '#666';
+          }
+        });
+
+        // Show/hide content for this specific trip
+        const contentContainer = document.getElementById(`trip-content-${tripId}`);
+        const tabContents = contentContainer.querySelectorAll('.trip-tab-content');
+        
+        tabContents.forEach(content => {
+          if (content.getAttribute('data-tab') === tabName) {
+            content.style.display = 'block';
+          } else {
+            content.style.display = 'none';
+          }
+        });
+      }
+
+      async function loadCollaborativeTrips() {
+        try {
+          const response = await fetch('/api/my-collaborative-trips');
+          const data = await response.json();
+
+          if (data.success && data.trips && data.trips.length > 0) {
+            allCollaborativeTrips = data.trips; // Store all trips
+            displayFilteredTrips(currentCollabTab); // Display current tab's content
+          } else {
+            allCollaborativeTrips = [];
+            displayFilteredTrips(currentCollabTab);
+          }
+        } catch (error) {
+          console.error('Error loading collaborative trips:', error);
+          document.getElementById('collaborative-trips-container').innerHTML = '<p style="color: #e74c3c; text-align: center;">Failed to load collaborative trips</p>';
+        }
       }
 
       async function deleteTrip(tripId) {
@@ -1069,6 +1256,10 @@
 
         // Load stats on page load
         loadPlatformStats();
+        
+        // 🤝 Initialize collaborative trips tabs and load trips
+        initializeCollabTabs();
+        loadCollaborativeTrips();
       });
 
       // ✨ Add some loading animation
@@ -1088,6 +1279,13 @@
 
     <!-- 💬 Floating GPT Assistant -->
     <style>
+      /* 🎨 Pulse animation for activity indicators */
+      @keyframes pulse {
+        0% { opacity: 1; }
+        50% { opacity: 0.7; }
+        100% { opacity: 1; }
+      }
+      
       #chat-toggle {
         position: fixed;
         bottom: 25px;
