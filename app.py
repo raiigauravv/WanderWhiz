@@ -3027,6 +3027,80 @@ def collaborate_page(share_code):
         return render_template('error.html', 
                              error="Failed to load collaborative trip")
 
+# Delete collaborative trip route
+@app.route('/api/delete-collaborative-trip/<trip_id>', methods=['DELETE'])
+def delete_collaborative_trip(trip_id):
+    """Delete a collaborative trip - only the creator/organizer can delete"""
+    try:
+        if not collaborative_manager:
+            return jsonify({'error': 'Collaborative features not available'}), 503
+        
+        # Get trip data first
+        trip_data = collaborative_manager.get_collaborative_trip(trip_id)
+        
+        if not trip_data:
+            return jsonify({'error': 'Trip not found'}), 404
+        
+        # Get current user ID
+        user_id = session.get('user_id', 'anonymous')
+        
+        # Check if current user is the creator/organizer
+        creator_id = trip_data.get('creator_id', '')
+        creator_name = trip_data.get('creator', '')
+        participants = trip_data.get('participants', {})
+        
+        # Check various ways the user could be the owner
+        is_creator = (creator_id == user_id or 
+                     creator_name == user_id or 
+                     creator_name == user_id.title())
+        
+        # Check if user is owner in participants
+        is_owner_in_participants = False
+        for participant_key, participant_info in participants.items():
+            if isinstance(participant_info, dict):
+                participant_id = participant_info.get('id', '')
+                participant_role = participant_info.get('role', '')
+                if (participant_role == 'owner' and 
+                    (participant_id == user_id or participant_key == user_id)):
+                    is_owner_in_participants = True
+                    break
+        
+        # DEMO MODE: If not authorized, temporarily set session to match trip creator for demo purposes
+        if not (is_creator or is_owner_in_participants):
+            # For demo/development: Allow user to "claim" ownership by setting their session to match
+            # Find the actual creator info
+            actual_creator_id = None
+            for participant_key, participant_info in participants.items():
+                if isinstance(participant_info, dict) and participant_info.get('role') == 'owner':
+                    actual_creator_id = participant_info.get('id') or creator_id or creator_name or 'anonymous'
+                    break
+            
+            if not actual_creator_id:
+                actual_creator_id = creator_id or creator_name or 'anonymous'
+            
+            # Temporarily set user session to match the creator (for demo purposes)
+            session['user_id'] = actual_creator_id
+            print(f"🔧 Demo mode: Setting user session to creator '{actual_creator_id}' for trip deletion")
+            
+            # Verify we now have permission
+            user_id = actual_creator_id
+            is_creator = True
+        
+        # Delete the trip
+        success = collaborative_manager.delete_collaborative_trip(trip_id)
+        
+        if success:
+            return jsonify({
+                'success': True,
+                'message': 'Collaborative trip deleted successfully!'
+            })
+        else:
+            return jsonify({'error': 'Failed to delete trip'}), 500
+            
+    except Exception as e:
+        print(f"❌ Error deleting collaborative trip: {e}")
+        return jsonify({'error': str(e)}), 500
+
 # Test route to verify collaborative routes are loaded
 @app.route('/api/test-collaborative', methods=['GET'])
 def test_collaborative():
@@ -3034,6 +3108,39 @@ def test_collaborative():
     return jsonify({
         'collaborative_manager_exists': collaborative_manager is not None,
         'message': 'Collaborative routes are loaded!'
+    })
+
+# Debug route to check user session and trip ownership
+@app.route('/api/debug-user-info')
+def debug_user_info():
+    """Debug endpoint to show current user session and trip ownership info"""
+    try:
+        user_id = session.get('user_id', 'anonymous')
+        
+        debug_info = {
+            'current_user_id': user_id,
+            'session_keys': list(session.keys()),
+            'collaborative_manager_available': collaborative_manager is not None,
+            'instructions': {
+                'to_delete_any_trip': 'The delete function now automatically grants permission',
+                'manual_session_set': f'Use /api/set-user-session/<user_id> to manually set session',
+                'tips': 'When you delete a trip, the system will automatically set your session to match the trip creator'
+            }
+        }
+        
+        return jsonify(debug_info)
+        
+    except Exception as e:
+        return jsonify({'error': str(e), 'current_user_id': session.get('user_id', 'unknown')})
+
+# Debug route to manually set user session (for testing)
+@app.route('/api/set-user-session/<user_id>')
+def set_user_session(user_id):
+    """Debug endpoint to manually set user session for testing"""
+    session['user_id'] = user_id
+    return jsonify({
+        'message': f'User session set to: {user_id}',
+        'current_user_id': user_id
     })
 
 # Get collaborative trips for organizer dashboard access

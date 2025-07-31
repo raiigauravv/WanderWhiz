@@ -435,3 +435,57 @@ class CollaborativeTripManager:
         except Exception as e:
             print(f"❌ Error getting trip by share code: {e}")
             return None
+    
+    def delete_collaborative_trip(self, trip_id):
+        """Delete a collaborative trip and its associated share code"""
+        try:
+            if not self.firestore_db and not hasattr(self, 'memory_store'):
+                return False
+            
+            if self.firestore_db:
+                # Get trip data first to find share code
+                trip_ref = self.firestore_db.collection('collaborative_trips').document(trip_id)
+                trip_doc = trip_ref.get()
+                
+                if trip_doc.exists:
+                    trip_data = trip_doc.to_dict()
+                    share_code = trip_data.get('share_code', '')
+                    
+                    # Delete the trip document
+                    trip_ref.delete()
+                    print(f"🗑️ Deleted collaborative trip: {trip_id}")
+                    
+                    # Delete the share code document if it exists
+                    if share_code:
+                        share_ref = self.firestore_db.collection('share_codes').document(share_code)
+                        share_ref.delete()
+                        print(f"🗑️ Deleted share code: {share_code}")
+                    
+                    return True
+                else:
+                    print(f"❌ Trip not found for deletion: {trip_id}")
+                    return False
+            else:
+                # Use memory storage
+                trip_data = self.memory_store.get(trip_id)
+                if trip_data:
+                    share_code = trip_data.get('share_code', '')
+                    
+                    # Delete from memory store
+                    del self.memory_store[trip_id]
+                    
+                    # Delete share code mapping
+                    if share_code:
+                        share_key = f"share_{share_code}"
+                        if share_key in self.memory_store:
+                            del self.memory_store[share_key]
+                    
+                    print(f"🗑️ Deleted collaborative trip from memory: {trip_id}")
+                    return True
+                else:
+                    print(f"❌ Trip not found for deletion in memory: {trip_id}")
+                    return False
+                    
+        except Exception as e:
+            print(f"❌ Error deleting collaborative trip: {e}")
+            return False
