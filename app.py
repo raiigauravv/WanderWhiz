@@ -2811,6 +2811,7 @@ def add_comment():
 @app.route('/collaborate/<share_code>')
 def collaborate_page(share_code):
     """Collaborative trip page accessed via share code"""
+    print(f"🔍 ROUTE DEBUG: Starting /collaborate/{share_code}")
     try:
         if not collaborative_manager:
             return render_template('error.html', 
@@ -2862,6 +2863,11 @@ def collaborate_page(share_code):
         
         print(f"🔍 Debug cleaned trip_data keys: {list(trip_data.keys())}")
         print(f"🔍 Debug places count: {len(trip_data['trip_data']['places'])}")
+        
+        # Additional debugging
+        print(f"🔍 Debug: trip_data structure: {type(trip_data)}")
+        print(f"🔍 Debug: trip_data.trip_data: {type(trip_data.get('trip_data', {}))}")
+        print(f"🔍 Debug: First place: {trip_data['trip_data']['places'][0] if trip_data['trip_data']['places'] else 'NO PLACES'}")
         
         return render_template('collaborative_trip.html', 
                              trip_data=trip_data, 

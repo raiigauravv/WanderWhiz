@@ -476,7 +476,7 @@
                                     <div class="place-title">{{ place.name }}</div>
                                     <div class="place-rating">
                                         {% for i in range(5) %}
-                                        <i class="fas fa-star {{ 'active' if i < place.rating else '' }}"></i>
+                                        <i class="fas fa-star {{ 'active' if place.rating and i < place.rating else '' }}"></i>
                                         {% endfor %}
                                         <span>{{ place.rating or 'N/A' }}</span>
                                     </div>
