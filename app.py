@@ -87,6 +87,31 @@ load_dotenv()
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "your-secret-key-here")
 
+# Cache busting for static files
+import time
+import hashlib
+
+def get_file_hash(filepath):
+    """Generate hash for cache busting"""
+    try:
+        import os
+        full_path = os.path.join(app.static_folder, filepath)
+        if os.path.exists(full_path):
+            with open(full_path, 'rb') as f:
+                return hashlib.md5(f.read()).hexdigest()[:8]
+    except:
+        pass
+    # Fallback to timestamp
+    return str(int(time.time()))
+
+@app.context_processor
+def inject_cache_busting():
+    """Add cache busting to all templates"""
+    return {
+        'cache_bust': get_file_hash,
+        'version': str(int(time.time()))
+    }
+
 # API Keys configuration
 GOOGLE_MAPS_API_KEY = os.getenv("GOOGLE_MAPS_API_KEY")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
@@ -2972,17 +2997,39 @@ def get_my_collaborative_trips():
                     total_votes = sum(len(v) if isinstance(v, (list, dict)) else 0 for v in votes.values())
                     total_comments = sum(len(c) if isinstance(c, dict) else 0 for c in comments.values())
                     
+                    # Convert participants dict to list for easier frontend handling
+                    participants_list = []
+                    for participant_key, participant_info in participants.items():
+                        if isinstance(participant_info, dict):
+                            participants_list.append({
+                                'id': participant_info.get('id', participant_key),
+                                'name': participant_info.get('name', participant_key),
+                                'role': participant_info.get('role', 'participant')
+                            })
+                        else:
+                            # Handle legacy participant format
+                            participants_list.append({
+                                'id': participant_key,
+                                'name': participant_key,
+                                'role': 'participant'
+                            })
+                    
                     collaborative_trips.append({
                         'trip_id': trip_id,
                         'destination': trip_info.get('destination', 'Unknown Destination'),
                         'share_code': trip_data.get('share_code', ''),
                         'created_at': trip_data.get('created_at', ''),
+                        'participants': participants_list,
                         'participants_count': len(participants),
+                        'votes': votes,  # Include actual votes data
+                        'comments': comments,  # Include actual comments data
                         'total_votes': total_votes,
                         'total_comments': total_comments,
                         'status': trip_data.get('status', 'active'),
                         'last_updated': trip_data.get('last_updated', ''),
-                        'has_activity': total_votes > 0 or total_comments > 0
+                        'has_activity': total_votes > 0 or total_comments > 0,
+                        'places_count': len(trip_info.get('itinerary', [])) if 'itinerary' in trip_info else 0,
+                        'is_owner': True  # This is always true since we're fetching user's own trips
                     })
                 else:
                     print(f"❌ Debug: Trip {trip_id} doesn't match current user")

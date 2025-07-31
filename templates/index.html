@@ -3,10 +3,13 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
     <title>WanderWhiz</title>
     <link
       rel="stylesheet"
-      href="{{ url_for('static', filename='css/styles.css') }}"
+      href="{{ url_for('static', filename='css/styles.css') }}?v={{ cache_bust('css/styles.css') }}"
     />
   </head>
   <body>
@@ -1034,23 +1037,51 @@
                     <div style="display: flex; flex-wrap: wrap; gap: 8px;">
                       ${trip.participants ? trip.participants.map(p => `
                         <div style="background: #e3f2fd; color: #1976d2; padding: 6px 12px; border-radius: 15px; font-size: 0.8rem; display: flex; align-items: center; gap: 4px;">
-                          ${p.role === 'owner' ? '👑' : '👤'} ${p.name}
+                          ${p.role === 'owner' ? '👑' : '👤'} ${p.name || p.id}
                         </div>
                       `).join('') : '<p style="color: #7f8c8d; font-size: 0.85rem; margin: 0;">Loading participants...</p>'}
                     </div>
                   </div>
                   
                   <div class="trip-tab-content" data-tab="votes" style="display: none;">
-                    <h6 style="margin: 0 0 10px 0; color: #e67e22; font-size: 0.9rem; font-weight: 600;">Recent Voting Activity</h6>
-                    <div style="color: #7f8c8d; font-size: 0.85rem;">
-                      ${trip.total_votes > 0 ? `🗳️ ${trip.total_votes} votes cast across all places` : 'No votes yet - encourage participants to vote!'}
+                    <h6 style="margin: 0 0 10px 0; color: #e67e22; font-size: 0.9rem; font-weight: 600;">All Voting Activity (${trip.total_votes})</h6>
+                    <div id="votes-content-${trip.trip_id}" style="max-height: 200px; overflow-y: auto;">
+                      ${trip.votes && Object.keys(trip.votes).length > 0 ? 
+                        Object.entries(trip.votes).map(([place, voteData]) => `
+                          <div style="background: #fff3e0; border-left: 4px solid #ff9800; padding: 10px; margin: 8px 0; border-radius: 0 8px 8px 0;">
+                            <div style="font-weight: 600; color: #f57c00; font-size: 0.85rem; margin-bottom: 5px;">📍 ${place}</div>
+                            <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+                              ${Object.entries(voteData).map(([voter, voteInfo]) => `
+                                <span style="background: #ff9800; color: white; padding: 3px 8px; border-radius: 12px; font-size: 0.75rem;">
+                                  ${voter}: ${voteInfo.vote || voteInfo}
+                                </span>
+                              `).join('')}
+                            </div>
+                          </div>
+                        `).join('') 
+                        : '<div style="color: #7f8c8d; font-size: 0.85rem; text-align: center; padding: 20px;">No votes yet - encourage participants to vote on places!</div>'
+                      }
                     </div>
                   </div>
                   
                   <div class="trip-tab-content" data-tab="comments" style="display: none;">
-                    <h6 style="margin: 0 0 10px 0; color: #9b59b6; font-size: 0.9rem; font-weight: 600;">Latest Comments</h6>
-                    <div style="color: #7f8c8d; font-size: 0.85rem;">
-                      ${trip.total_comments > 0 ? `💬 ${trip.total_comments} comments posted` : 'No comments yet - start the conversation!'}
+                    <h6 style="margin: 0 0 10px 0; color: #9b59b6; font-size: 0.9rem; font-weight: 600;">All Comments (${trip.total_comments})</h6>
+                    <div id="comments-content-${trip.trip_id}" style="max-height: 200px; overflow-y: auto;">
+                      ${trip.comments && Object.keys(trip.comments).length > 0 ? 
+                        Object.entries(trip.comments).map(([place, commentsData]) => `
+                          <div style="background: #f3e5f5; border-left: 4px solid #9c27b0; padding: 10px; margin: 8px 0; border-radius: 0 8px 8px 0;">
+                            <div style="font-weight: 600; color: #7b1fa2; font-size: 0.85rem; margin-bottom: 8px;">📍 ${place}</div>
+                            ${Object.entries(commentsData).map(([commenter, commentInfo]) => `
+                              <div style="background: white; padding: 8px; margin: 4px 0; border-radius: 6px; border: 1px solid #e1bee7;">
+                                <div style="font-size: 0.75rem; color: #8e24aa; font-weight: 600; margin-bottom: 2px;">� ${commenter}</div>
+                                <div style="font-size: 0.8rem; color: #424242; line-height: 1.4;">${commentInfo.comment || commentInfo}</div>
+                                ${commentInfo.timestamp ? `<div style="font-size: 0.7rem; color: #9e9e9e; margin-top: 4px;">⏰ ${new Date(commentInfo.timestamp).toLocaleString()}</div>` : ''}
+                              </div>
+                            `).join('')}
+                          </div>
+                        `).join('') 
+                        : '<div style="color: #7f8c8d; font-size: 0.85rem; text-align: center; padding: 20px;">No comments yet - start the conversation about places!</div>'
+                      }
                     </div>
                   </div>
                 </div>
@@ -1675,7 +1706,7 @@
       async
       defer
     ></script>
-    <script src="{{ url_for('static', filename='js/map.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/map.js') }}?v={{ cache_bust('js/map.js') }}"></script>
     
     <!-- Collaborative Trip Planning JavaScript -->
     <script>
