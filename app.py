@@ -694,18 +694,27 @@ def get_place_details(place_id):
     return {}
 
 def get_place_name_from_id(place_id):
-    """Get place name from place ID using Google Places API"""
-    try:
-        details = get_place_details(place_id)
-        return details.get('name', place_id)
-    except Exception as e:
-        print(f"Error getting place name for {place_id}: {e}")
-        return place_id
+    """Get place name from place ID - FAST VERSION (no API calls)"""
+    # Skip Google API calls completely for performance
+    if not place_id:
+        return "Unknown Place"
+    
+    # If it's already a readable name (no complex place ID format), return as-is
+    if not place_id.startswith('ChIJ') and len(place_id) < 50:
+        return place_id.replace('_', ' ').title()
+    
+    # For Google place IDs, create a short readable version
+    if len(place_id) > 20:
+        return f"Place ({place_id[-6:]})"
+    else:
+        return place_id.title()
 
 def clean_collaborative_data(votes, comments):
     """Clean and format votes and comments data for frontend display"""
     cleaned_votes = {}
     cleaned_comments = {}
+    
+    print(f"🧹 Cleaning collaborative data: {len(votes)} votes, {len(comments)} comments")
     
     # Cache place names to avoid multiple API calls
     place_name_cache = {}
@@ -757,6 +766,7 @@ def clean_collaborative_data(votes, comments):
                     'timestamp': comment_timestamp
                 }
     
+    print(f"✅ Cleaned data: {len(cleaned_votes)} vote places, {len(cleaned_comments)} comment places")
     return cleaned_votes, cleaned_comments
 
 def get_address_from_coordinates(lat, lng):
@@ -1132,6 +1142,16 @@ def gpt_assist():
     user_prompt = request.form["prompt"]
     print(f"🧠 GPT User prompt: {user_prompt}")
     
+    # Check if OpenAI API key is available
+    if not OPENAI_API_KEY:
+        print("❌ OpenAI API key is missing!")
+        return render_template("index.html", 
+                             api_key=GOOGLE_MAPS_API_KEY,
+                             places=[],
+                             places_json=json.dumps([]),
+                             lat=43.65107, lng=-79.347015,
+                             error="🤖 AI Learning is temporarily unavailable. OpenAI API key is missing. Please use the regular search instead.")
+    
     try:
         # Initialize OpenAI client (using new API format)
         client = openai.OpenAI(api_key=OPENAI_API_KEY)
@@ -1240,8 +1260,19 @@ def gpt_assist():
                             lng_diff = abs(place_lng - lng)
                             distance = (lat_diff ** 2 + lng_diff ** 2) ** 0.5
                             
-                            # Keep places within ~30km
-                            if distance < 0.3:
+                            # Smart filtering based on search area size
+                            # For large areas like states/countries, use larger radius
+                            # For cities, use smaller radius
+                            max_distance = 0.3  # Default: ~30km for cities
+                            
+                            # Detect if searching a large area (state/country) vs city
+                            search_terms = city.lower()
+                            large_areas = ['texas', 'california', 'new york', 'florida', 'canada', 'usa', 'united states']
+                            if any(area in search_terms for area in large_areas):
+                                max_distance = 6.0  # ~600km for states/large areas
+                                print(f"🌍 Large area detected ({city}), using extended radius: {max_distance} degrees")
+                            
+                            if distance < max_distance:
                                 filtered_places.append(place)
                             else:
                                 print(f"🚫 Filtered out {place.get('name', 'Unknown')} - distance: {distance:.3f} degrees")
@@ -1406,15 +1437,36 @@ def itinerary():
         if len(valid_places) < 2:
             return "Please select at least 2 places with valid coordinates to build an itinerary.", 400
             
-        # Second pass: filter out places that are too far from the main cluster
+        # Second pass: Smart geographic clustering with adaptive radius
         # Calculate center point of all places
         total_lat = sum(place['geometry']['location']['lat'] for place in valid_places)
         total_lng = sum(place['geometry']['location']['lng'] for place in valid_places)
         center_lat = total_lat / len(valid_places)
         center_lng = total_lng / len(valid_places)
         
-        # Filter places within reasonable distance from center (max 15km for city-level clustering)
-        MAX_DISTANCE_KM = 15
+        # Calculate the spread of places to determine appropriate clustering radius
+        distances_from_center = []
+        for place in valid_places:
+            lat = place['geometry']['location']['lat']
+            lng = place['geometry']['location']['lng']
+            distance = calculate_distance(center_lat, center_lng, lat, lng)
+            distances_from_center.append(distance)
+        
+        # Determine clustering radius based on the spread of places
+        max_distance = max(distances_from_center) if distances_from_center else 0
+        avg_distance = sum(distances_from_center) / len(distances_from_center) if distances_from_center else 0
+        
+        # Adaptive radius logic
+        if max_distance > 200:  # Large area like a state/country
+            MAX_DISTANCE_KM = max_distance * 0.8  # Allow 80% of the maximum spread
+            print(f"🌍 Large area detected, using extended clustering radius: {MAX_DISTANCE_KM:.1f}km")
+        elif max_distance > 50:  # Medium area like a large city
+            MAX_DISTANCE_KM = max_distance * 0.9  # Allow 90% of the maximum spread
+            print(f"🏙️ Medium area detected, using moderate clustering radius: {MAX_DISTANCE_KM:.1f}km")
+        else:  # Small area like a city center
+            MAX_DISTANCE_KM = max(25, max_distance * 1.1)  # At least 25km or 110% of spread
+            print(f"🏘️ Small area detected, using standard clustering radius: {MAX_DISTANCE_KM:.1f}km")
+        
         selected_places = []
         
         for place in valid_places:
@@ -1428,14 +1480,17 @@ def itinerary():
             else:
                 print(f"⚠️ Place too far from cluster: {place.get('name')} ({distance:.1f}km from center, skipping)")
         
-        print(f"✅ Selected places after clustering: {len(selected_places)}")
+        print(f"✅ Selected places after adaptive clustering: {len(selected_places)}")
         
         # Debug: Print first place to see its structure
         if selected_places:
             print(f"🔍 First place structure: {json.dumps(selected_places[0], indent=2)}")
         
+        # If adaptive clustering still results in too few places, disable clustering
         if len(selected_places) < 2:
-            return "After geographic clustering, less than 2 places remain. Please select places that are closer together.", 400
+            print("⚠️ Adaptive clustering too restrictive, disabling clustering and using all valid places")
+            selected_places = valid_places
+            print(f"✅ Using all {len(selected_places)} valid places without clustering")
 
         # Build Directions API waypoints
         origin = selected_places[0]["geometry"]["location"]
