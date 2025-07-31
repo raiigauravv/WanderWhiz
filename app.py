@@ -674,12 +674,12 @@ def clean_place_data(places):
     return cleaned_places
 
 def get_place_details(place_id):
-    """Fetch detailed information including formatted address for a place"""
+    """Fetch detailed information including name and formatted address for a place"""
     try:
         details_url = f"https://maps.googleapis.com/maps/api/place/details/json"
         params = {
             'place_id': place_id,
-            'fields': 'formatted_address,opening_hours,website,international_phone_number,price_level,photos',
+            'fields': 'name,formatted_address,opening_hours,website,international_phone_number,price_level,photos',
             'key': GOOGLE_MAPS_API_KEY
         }
         
@@ -692,6 +692,72 @@ def get_place_details(place_id):
         print(f"Error fetching place details: {e}")
     
     return {}
+
+def get_place_name_from_id(place_id):
+    """Get place name from place ID using Google Places API"""
+    try:
+        details = get_place_details(place_id)
+        return details.get('name', place_id)
+    except Exception as e:
+        print(f"Error getting place name for {place_id}: {e}")
+        return place_id
+
+def clean_collaborative_data(votes, comments):
+    """Clean and format votes and comments data for frontend display"""
+    cleaned_votes = {}
+    cleaned_comments = {}
+    
+    # Cache place names to avoid multiple API calls
+    place_name_cache = {}
+    
+    # Clean votes data
+    for place_id, vote_data in votes.items():
+        if place_id not in place_name_cache:
+            place_name_cache[place_id] = get_place_name_from_id(place_id)
+        
+        place_name = place_name_cache[place_id]
+        cleaned_votes[place_name] = {}
+        
+        if isinstance(vote_data, dict):
+            for voter_id, vote_info in vote_data.items():
+                # Clean voter name (remove random IDs)
+                clean_voter_name = voter_id if len(voter_id) <= 20 else f"User {voter_id[:8]}"
+                
+                # Extract vote value
+                if isinstance(vote_info, dict):
+                    vote_value = vote_info.get('vote', 'unknown')
+                else:
+                    vote_value = str(vote_info)
+                
+                cleaned_votes[place_name][clean_voter_name] = vote_value
+    
+    # Clean comments data
+    for place_id, comment_data in comments.items():
+        if place_id not in place_name_cache:
+            place_name_cache[place_id] = get_place_name_from_id(place_id)
+            
+        place_name = place_name_cache[place_id]
+        cleaned_comments[place_name] = {}
+        
+        if isinstance(comment_data, dict):
+            for commenter_id, comment_info in comment_data.items():
+                # Clean commenter name
+                clean_commenter_name = commenter_id if len(commenter_id) <= 20 else f"User {commenter_id[:8]}"
+                
+                # Extract comment details
+                if isinstance(comment_info, dict):
+                    comment_text = comment_info.get('comment', 'No comment')
+                    comment_timestamp = comment_info.get('timestamp', '')
+                else:
+                    comment_text = str(comment_info)
+                    comment_timestamp = ''
+                
+                cleaned_comments[place_name][clean_commenter_name] = {
+                    'comment': comment_text,
+                    'timestamp': comment_timestamp
+                }
+    
+    return cleaned_votes, cleaned_comments
 
 def get_address_from_coordinates(lat, lng):
     """Get formatted address from coordinates using reverse geocoding"""
@@ -2993,8 +3059,11 @@ def get_my_collaborative_trips():
                     votes = trip_data.get('votes', {})
                     comments = trip_data.get('comments', {})
                     
+                    # Clean and format votes and comments data
+                    cleaned_votes, cleaned_comments = clean_collaborative_data(votes, comments)
+                    
                     # Count activity
-                    total_votes = sum(len(v) if isinstance(v, (list, dict)) else 0 for v in votes.values())
+                    total_votes = sum(len(v) if isinstance(v, dict) else 0 for v in votes.values())
                     total_comments = sum(len(c) if isinstance(c, dict) else 0 for c in comments.values())
                     
                     # Convert participants dict to list for easier frontend handling
@@ -3021,8 +3090,8 @@ def get_my_collaborative_trips():
                         'created_at': trip_data.get('created_at', ''),
                         'participants': participants_list,
                         'participants_count': len(participants),
-                        'votes': votes,  # Include actual votes data
-                        'comments': comments,  # Include actual comments data
+                        'votes': cleaned_votes,  # Use cleaned votes data with place names
+                        'comments': cleaned_comments,  # Use cleaned comments data with place names
                         'total_votes': total_votes,
                         'total_comments': total_comments,
                         'status': trip_data.get('status', 'active'),
